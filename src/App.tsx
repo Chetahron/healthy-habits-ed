@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import logoImg from './assets/logo.png';
 
-// LOGO URL defined locally from public folder
-const LOGO_URL = "/logo.png";
+// LOGO URL defined from imported asset
+const LOGO_URL = logoImg;
 
 // --- Types & Interfaces ---
 interface DailyEntry {
@@ -325,24 +326,22 @@ export default function App() {
       marginTop: '5px'
     },
     mainLogoImage: {
-      width: '120px',
-      height: '120px',
-      borderRadius: '50%',
-      objectFit: 'cover',
-      margin: '10px auto',
+      maxWidth: '220px',
+      maxHeight: '140px',
+      objectFit: 'contain',
+      margin: '15px auto',
       display: 'block'
     },
     navLogoImage: {
-      width: '70px',
-      height: '70px',
-      borderRadius: '50%',
-      objectFit: 'cover',
-      border: '2px solid #FFFFFF',
+      maxWidth: '120px',
+      maxHeight: '80px',
+      objectFit: 'contain',
       margin: '0 auto 20px auto',
       display: 'block'
     },
     headerLogoImage: {
-      height: '60px',
+      maxWidth: '180px',
+      maxHeight: '90px',
       objectFit: 'contain',
       margin: '0 auto 5px auto',
       display: 'block'
