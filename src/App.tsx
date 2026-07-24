@@ -326,8 +326,8 @@ export default function App() {
       marginTop: '5px'
     },
     mainLogoImage: {
-      maxWidth: '220px',
-      maxHeight: '140px',
+      maxWidth: '440px', // Twice as big (was 220px)
+      maxHeight: '280px', // Twice as big (was 140px)
       objectFit: 'contain',
       margin: '15px auto',
       display: 'block'
@@ -343,7 +343,7 @@ export default function App() {
       maxWidth: '180px',
       maxHeight: '90px',
       objectFit: 'contain',
-      margin: '0 auto 5px auto',
+      margin: '0 0 5px 0', // Left aligned margin
       display: 'block'
     },
     authContainer: {
@@ -480,9 +480,7 @@ export default function App() {
       <div style={styles.appContainer}>
         <div style={{ padding: '40px 20px' }}>
           <div style={styles.centerHeader}>
-            <div style={styles.titleText}>Welcome to HealthyHabitsED</div>
             <img src={LOGO_URL} alt="HealthyHabitsED Logo" style={styles.mainLogoImage} />
-            <div style={styles.taglineText}>Healthy Habits, Strong Minds, Bright Futures</div>
           </div>
 
           <div style={styles.authContainer}>
@@ -571,7 +569,7 @@ export default function App() {
                   />{' '}
                   Student
                 </label>
-                <div style={{ color: roleError ? 'red' : charBlack, fontSize: '12px', marginTop: '4px' }}>
+                <div style={{ color: roleError ? 'red' : charBlack, fontSize: '10px', marginTop: '4px' }}>
                   Please select whether you are a teacher registering a new classroom or a student registering into an existing classroom with a classroom code that your teacher has given you. This is a required field.
                 </div>
               </div>
@@ -597,7 +595,7 @@ export default function App() {
                   <option value="6th - 8th">6th - 8th</option>
                   <option value="9th - 12th">9th - 12th</option>
                 </select>
-                <div style={{ color: gradeError ? 'red' : charBlack, fontSize: '12px', marginTop: '4px' }}>
+                <div style={{ color: gradeError ? 'red' : charBlack, fontSize: '10px', marginTop: '4px' }}>
                   If you are a teacher, this is a required field. Please select the grade of your classroom. If you are a student, you do not need to make a selection. Your teacher will have already done this for your classroom.
                 </div>
               </div>
@@ -616,11 +614,11 @@ export default function App() {
                   }}
                   style={{ ...styles.inputBox, margin: '0' }}
                 />
-                <div style={{ color: regFormatError ? 'red' : charBlack, fontSize: '12px', marginTop: '4px' }}>
+                <div style={{ color: regFormatError ? 'red' : charBlack, fontSize: '10px', marginTop: '4px' }}>
                   Please select a username that is 6-12 alphanumeric characters (no special characters).
                 </div>
                 {regTakenError && (
-                  <div style={{ color: 'red', fontSize: '12px', marginTop: '4px' }}>
+                  <div style={{ color: 'red', fontSize: '10px', marginTop: '4px' }}>
                     That username has already been registered. Please select a different username.
                   </div>
                 )}
@@ -640,11 +638,11 @@ export default function App() {
                   }}
                   style={{ ...styles.inputBox, margin: '0' }}
                 />
-                <div style={{ color: codeEmptyError ? 'red' : charBlack, fontSize: '12px', marginTop: '4px' }}>
+                <div style={{ color: codeEmptyError ? 'red' : charBlack, fontSize: '10px', marginTop: '4px' }}>
                   If you are a teacher registering a new classroom, please enter a unique code for your classroom. If you are a student joining your teacher’s classroom, please enter the classroom code that your teacher gave you.
                 </div>
                 {codeCustomError && (
-                  <div style={{ color: 'red', fontSize: '12px', marginTop: '4px' }}>
+                  <div style={{ color: 'red', fontSize: '10px', marginTop: '4px' }}>
                     {codeCustomError}
                   </div>
                 )}
@@ -733,7 +731,8 @@ export default function App() {
         </div>
 
         <div style={styles.mainContent}>
-          <div style={{ textAlign: 'center', marginBottom: '25px' }}>
+          {/* Left-aligned top header for all 3 pages */}
+          <div style={{ textAlign: 'left', marginBottom: '25px' }}>
             <img src={LOGO_URL} alt="HealthyHabitsED Logo" style={styles.headerLogoImage} />
 
             <br />
