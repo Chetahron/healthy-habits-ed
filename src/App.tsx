@@ -295,75 +295,67 @@ export default function App() {
   const cream = '#FCFAF5';
   const charBlack = '#202124';
 
-  const blueFont = "'Manrope', sans-serif";
-  const blackFont = "'Inter', sans-serif";
+  const manropeFont = "'Manrope', sans-serif";
 
   const styles: Record<string, React.CSSProperties> = {
     appContainer: {
-      fontFamily: blackFont,
+      fontFamily: manropeFont,
       backgroundColor: cream,
       color: charBlack,
       minHeight: '100vh',
       display: 'flex',
       flexDirection: 'column'
     },
-    centerHeader: {
-      textAlign: 'center',
+    leftHeader: {
+      textAlign: 'left',
       marginBottom: '20px'
     },
-    titleText: {
-      fontFamily: blueFont,
-      color: steelBlue,
+    titleTextBlack: {
+      fontFamily: manropeFont,
+      color: charBlack,
       fontSize: '28px',
       fontWeight: 600,
       margin: '10px 0'
     },
-    taglineText: {
-      fontFamily: blueFont,
-      color: steelBlue,
-      fontSize: '18px',
-      fontWeight: 600,
-      marginTop: '5px'
-    },
     mainLogoImage: {
-      maxWidth: '440px', // Twice as big (was 220px)
-      maxHeight: '280px', // Twice as big (was 140px)
+      maxWidth: '440px',
+      maxHeight: '280px',
       objectFit: 'contain',
-      margin: '15px auto',
+      margin: '15px 0',
       display: 'block'
     },
     navLogoImage: {
-      maxWidth: '120px',
-      maxHeight: '80px',
+      maxWidth: '192px', // Increased by 60% (was 120px)
+      maxHeight: '128px', // Increased by 60% (was 80px)
       objectFit: 'contain',
       margin: '0 auto 20px auto',
       display: 'block'
     },
     headerLogoImage: {
-      maxWidth: '180px',
-      maxHeight: '90px',
+      maxWidth: '540px', // Increased by 300% (was 180px)
+      maxHeight: '270px', // Increased by 300% (was 90px)
       objectFit: 'contain',
-      margin: '0 0 5px 0', // Left aligned margin
+      margin: '0 0 5px 0',
       display: 'block'
     },
     authContainer: {
       width: '420px',
-      margin: '0 auto',
+      margin: '0',
       textAlign: 'left'
     },
-    sectionHeading: {
-      fontFamily: blackFont,
+    sectionHeadingBlue: {
+      fontFamily: manropeFont,
       fontSize: '18px',
       fontWeight: 'bold',
-      color: charBlack,
-      marginTop: '15px',
+      color: steelBlue, // Blue font for headings
+      marginTop: '25px', // Extra spacing/carriage return before
       marginBottom: '6px'
     },
     inputBox: {
       width: '100%',
       padding: '10px',
       margin: '6px 0',
-      fontFamily: blackFont,
+      fontFamily: manropeFont,
       fontSize: '14px',
       boxSizing: 'border-box'
     },
@@ -373,7 +365,7 @@ export default function App() {
       color: '#FFFFFF',
       border: 'none',
       padding: '10px',
-      fontFamily: blueFont,
+      fontFamily: manropeFont,
       fontSize: '16px',
       fontWeight: 600,
       cursor: 'pointer',
@@ -382,14 +374,14 @@ export default function App() {
     linkText: {
       marginTop: '15px',
       color: charBlack,
-      fontFamily: blackFont,
+      fontFamily: manropeFont,
       fontSize: '14px'
     },
     linkAnchor: {
       color: steelBlue,
       cursor: 'pointer',
       textDecoration: 'underline',
-      fontFamily: blackFont
+      fontFamily: manropeFont
     },
     dashboardLayout: {
       display: 'flex',
@@ -413,7 +405,7 @@ export default function App() {
       padding: '10px',
       margin: '8px 0',
       cursor: 'pointer',
-      fontFamily: blackFont,
+      fontFamily: manropeFont,
       fontSize: '15px',
       fontWeight: 600,
       textAlign: 'center',
@@ -449,7 +441,7 @@ export default function App() {
       flexDirection: 'column',
       justifyContent: 'center',
       fontSize: '13px',
-      fontFamily: blackFont
+      fontFamily: manropeFont
     },
     logTable: {
       width: '100%',
@@ -460,14 +452,14 @@ export default function App() {
     logTableCell: {
       padding: '10px 12px',
       textAlign: 'left',
-      fontFamily: blackFont,
+      fontFamily: manropeFont,
       color: charBlack,
       fontSize: '15px'
     },
     logTableHeaderCell: {
       padding: '10px 12px',
       textAlign: 'left',
-      fontFamily: blueFont,
+      fontFamily: manropeFont,
       color: steelBlue,
       fontWeight: 'bold',
       fontSize: '16px'
@@ -478,13 +470,13 @@ export default function App() {
   if (currentPage === 'login') {
     return (
       <div style={styles.appContainer}>
-        <div style={{ padding: '40px 20px' }}>
-          <div style={styles.centerHeader}>
+        <div style={{ padding: '40px 20px', textAlign: 'left' }}>
+          <div style={styles.leftHeader}>
             <img src={LOGO_URL} alt="HealthyHabitsED Logo" style={styles.mainLogoImage} />
           </div>
 
           <div style={styles.authContainer}>
-            <h2 style={{ color: charBlack, marginBottom: '5px', fontFamily: blackFont }}>Login</h2>
+            <h2 style={{ color: charBlack, marginBottom: '5px', fontFamily: manropeFont }}>Login</h2>
 
             <form onSubmit={handleLogin}>
               <input
@@ -496,7 +488,7 @@ export default function App() {
               />
 
               {loginError && (
-                <div style={{ color: 'red', fontSize: '13px', marginTop: '4px', fontFamily: blackFont }}>
+                <div style={{ color: 'red', fontSize: '13px', marginTop: '4px', fontFamily: manropeFont }}>
                   {loginError}
                 </div>
               )}
@@ -528,18 +520,17 @@ export default function App() {
   if (currentPage === 'register') {
     return (
       <div style={styles.appContainer}>
-        <div style={{ padding: '40px 20px' }}>
-          <div style={styles.centerHeader}>
-            <div style={styles.titleText}>Register for HealthyHabitsED</div>
+        <div style={{ padding: '40px 20px', textAlign: 'left' }}>
+          <div style={styles.leftHeader}>
+            <div style={styles.titleTextBlack}>Thank you for Registering for</div>
             <img src={LOGO_URL} alt="HealthyHabitsED Logo" style={styles.mainLogoImage} />
-            <div style={styles.taglineText}>Healthy Habits, Strong Minds, Bright Futures</div>
           </div>
 
           <div style={styles.authContainer}>
             <form onSubmit={handleRegister}>
-              <div style={styles.sectionHeading}>Are you a teacher or student?</div>
-              <div style={{ fontFamily: blackFont }}>
-                <label style={{ marginRight: '15px', color: charBlack, cursor: 'pointer' }}>
+              <div style={{ ...styles.sectionHeadingBlue, marginTop: '15px' }}>Are you a teacher or student?</div>
+              <div style={{ fontFamily: manropeFont, fontSize: '14px' }}>
+                <label style={{ marginRight: '15px', color: charBlack, cursor: 'pointer', fontSize: '14px' }}>
                   <input
                     type="radio"
                     name="role"
@@ -553,7 +544,7 @@ export default function App() {
                   />{' '}
                   Teacher
                 </label>
-                <label style={{ color: charBlack, cursor: 'pointer' }}>
+                <label style={{ color: charBlack, cursor: 'pointer', fontSize: '14px' }}>
                   <input
                     type="radio"
                     name="role"
@@ -574,8 +565,8 @@ export default function App() {
                 </div>
               </div>
 
-              <div style={styles.sectionHeading}>What grade is your classroom?</div>
-              <div style={{ fontFamily: blackFont }}>
+              <div style={styles.sectionHeadingBlue}>What grade is your classroom?</div>
+              <div style={{ fontFamily: manropeFont }}>
                 <select
                   value={regGrade}
                   disabled={regRole === 'Student'}
@@ -600,8 +591,8 @@ export default function App() {
                 </div>
               </div>
 
-              <div style={styles.sectionHeading}>What is your username?</div>
-              <div style={{ fontFamily: blackFont }}>
+              <div style={styles.sectionHeadingBlue}>What is your username?</div>
+              <div style={{ fontFamily: manropeFont }}>
                 <input
                   type="text"
                   placeholder="username"
@@ -624,8 +615,8 @@ export default function App() {
                 )}
               </div>
 
-              <div style={styles.sectionHeading}>What is your classroom id?</div>
-              <div style={{ fontFamily: blackFont }}>
+              <div style={styles.sectionHeadingBlue}>What is your classroom id?</div>
+              <div style={{ fontFamily: manropeFont }}>
                 <input
                   type="text"
                   placeholder="classroom code"
@@ -735,13 +726,10 @@ export default function App() {
           <div style={{ textAlign: 'left', marginBottom: '25px' }}>
             <img src={LOGO_URL} alt="HealthyHabitsED Logo" style={styles.headerLogoImage} />
 
-            <br />
-            <div style={{ color: charBlack, fontFamily: blackFont, fontSize: '16px' }}>
+            <div style={{ color: charBlack, fontFamily: manropeFont, fontSize: '16px' }}>
               My Grade: {currentUserGrade}
             </div>
-            <br />
-
-            <div style={{ color: charBlack, fontFamily: blackFont, fontSize: '16px' }}>
+            <div style={{ color: charBlack, fontFamily: manropeFont, fontSize: '16px' }}>
               Today's Date: {getTodayESTFormatted()}
             </div>
           </div>
@@ -749,7 +737,7 @@ export default function App() {
           {/* Home / Weekly Scorecard */}
           {currentPage === 'home' && (
             <div style={{ textAlign: 'left', maxWidth: '600px' }}>
-              <h2 style={{ color: steelBlue, fontFamily: blueFont }}>
+              <h2 style={{ color: steelBlue, fontFamily: manropeFont }}>
                 My Healthy Habits Scorecard (Weekly Average)
               </h2>
 
@@ -784,7 +772,7 @@ export default function App() {
           {/* Log My Daily Data Page */}
           {currentPage === 'log' && (
             <div style={{ textAlign: 'left', maxWidth: '600px' }}>
-              <h2 style={{ color: steelBlue, fontFamily: blueFont }}>Log My Daily Data</h2>
+              <h2 style={{ color: steelBlue, fontFamily: manropeFont }}>Log My Daily Data</h2>
 
               <form onSubmit={handleLogSubmit}>
                 <table style={styles.logTable}>
@@ -802,7 +790,7 @@ export default function App() {
                         <select
                           value={logWater}
                           onChange={(e) => setLogWater(Number(e.target.value))}
-                          style={{ padding: '5px 10px', fontFamily: blackFont }}
+                          style={{ padding: '5px 10px', fontFamily: manropeFont }}
                         >
                           {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((num) => (
                             <option key={num} value={num}>{num}</option>
@@ -818,7 +806,7 @@ export default function App() {
                         <select
                           value={logSleep}
                           onChange={(e) => setLogSleep(Number(e.target.value))}
-                          style={{ padding: '5px 10px', fontFamily: blackFont }}
+                          style={{ padding: '5px 10px', fontFamily: manropeFont }}
                         >
                           {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                             <option key={num} value={num}>{num}</option>
@@ -836,7 +824,7 @@ export default function App() {
                 </button>
 
                 {logSuccessMsg && (
-                  <div style={{ color: 'green', marginTop: '10px', fontWeight: 'bold', fontFamily: blackFont }}>
+                  <div style={{ color: 'green', marginTop: '10px', fontWeight: 'bold', fontFamily: manropeFont }}>
                     {logSuccessMsg}
                   </div>
                 )}
@@ -846,8 +834,8 @@ export default function App() {
 
           {/* View My Daily Data Page */}
           {currentPage === 'view' && (
-            <div style={{ textAlign: 'left', fontFamily: blackFont }}>
-              <h2 style={{ color: steelBlue, fontFamily: blueFont, marginBottom: '5px' }}>
+            <div style={{ textAlign: 'left', fontFamily: manropeFont }}>
+              <h2 style={{ color: steelBlue, fontFamily: manropeFont, marginBottom: '5px' }}>
                 View My Daily Data (4-Week)
               </h2>
               <br />
@@ -857,13 +845,13 @@ export default function App() {
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value as 'water' | 'sleep')}
-                  style={{ padding: '6px 12px', fontFamily: blackFont }}
+                  style={{ padding: '6px 12px', fontFamily: manropeFont }}
                 >
                   <option value="water">Water</option>
                   <option value="sleep">Sleep</option>
                 </select>
 
-                <span style={{ color: steelBlue, fontWeight: 'bold', fontFamily: blueFont }}>
+                <span style={{ color: steelBlue, fontWeight: 'bold', fontFamily: manropeFont }}>
                   {selectedCategory === 'water' ? 'Goal: 9-13 cups / day' : 'Goal: 8-10 hours / day'}
                 </span>
               </div>
