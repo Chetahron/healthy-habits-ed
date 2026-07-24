@@ -306,49 +306,42 @@ export default function App() {
       display: 'flex',
       flexDirection: 'column'
     },
-    leftHeader: {
-      textAlign: 'left',
+    centerHeader: {
+      textAlign: 'center',
       marginBottom: '20px'
-    },
-    titleTextBlack: {
-      fontFamily: manropeFont,
-      color: charBlack,
-      fontSize: '28px',
-      fontWeight: 600,
-      margin: '10px 0'
     },
     mainLogoImage: {
       maxWidth: '440px',
       maxHeight: '280px',
       objectFit: 'contain',
-      margin: '15px 0',
+      margin: '15px auto',
       display: 'block'
     },
     navLogoImage: {
-      maxWidth: '192px', // Increased by 60% (was 120px)
-      maxHeight: '128px', // Increased by 60% (was 80px)
+      maxWidth: '192px',
+      maxHeight: '128px',
       objectFit: 'contain',
       margin: '0 auto 20px auto',
       display: 'block'
     },
     headerLogoImage: {
-      maxWidth: '540px', // Increased by 300% (was 180px)
-      maxHeight: '270px', // Increased by 300% (was 90px)
+      maxWidth: '540px',
+      maxHeight: '270px',
       objectFit: 'contain',
       margin: '0 0 5px 0',
       display: 'block'
     },
     authContainer: {
       width: '420px',
-      margin: '0',
+      margin: '0 auto',
       textAlign: 'left'
     },
     sectionHeadingBlue: {
       fontFamily: manropeFont,
       fontSize: '18px',
       fontWeight: 'bold',
-      color: steelBlue, // Blue font for headings
-      marginTop: '25px', // Extra spacing/carriage return before
+      color: steelBlue,
+      marginTop: '25px',
       marginBottom: '6px'
     },
     inputBox: {
@@ -470,8 +463,8 @@ export default function App() {
   if (currentPage === 'login') {
     return (
       <div style={styles.appContainer}>
-        <div style={{ padding: '40px 20px', textAlign: 'left' }}>
-          <div style={styles.leftHeader}>
+        <div style={{ padding: '40px 20px' }}>
+          <div style={styles.centerHeader}>
             <img src={LOGO_URL} alt="HealthyHabitsED Logo" style={styles.mainLogoImage} />
           </div>
 
@@ -520,13 +513,14 @@ export default function App() {
   if (currentPage === 'register') {
     return (
       <div style={styles.appContainer}>
-        <div style={{ padding: '40px 20px', textAlign: 'left' }}>
-          <div style={styles.leftHeader}>
-            <div style={styles.titleTextBlack}>Thank you for Registering for</div>
+        <div style={{ padding: '40px 20px' }}>
+          <div style={styles.centerHeader}>
             <img src={LOGO_URL} alt="HealthyHabitsED Logo" style={styles.mainLogoImage} />
           </div>
 
           <div style={styles.authContainer}>
+            <h2 style={{ color: charBlack, marginBottom: '5px', fontFamily: manropeFont }}>Register</h2>
+
             <form onSubmit={handleRegister}>
               <div style={{ ...styles.sectionHeadingBlue, marginTop: '15px' }}>Are you a teacher or student?</div>
               <div style={{ fontFamily: manropeFont, fontSize: '14px' }}>
