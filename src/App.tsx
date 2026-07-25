@@ -4,6 +4,145 @@ import logoImg from './assets/logo.png';
 // LOGO URL defined from imported asset
 const LOGO_URL = logoImg;
 
+// ==========================================
+// --- EDIT 12: BACKGROUND LOOKUP TABLES ---
+// ==========================================
+
+export const LOOKUP_1 = {
+  title: "Lookup 1",
+  columns: [
+    "Grade", "Sleep", "Brush Teeth", "Physical Activity", "Outdoor Time",
+    "Reading", "Recreational Screen Time", "Water", "Fruits & Vegetables",
+    "Whole Foods", "Ultra-Processed Foods", "Sugary Drinks"
+  ],
+  rows: {
+    "K - 5th": {
+      Sleep: "9 - 12 hours / night",
+      "Brush Teeth": "2+ times / day",
+      "Physical Activity": "60+ minutes / day",
+      "Outdoor Time": "60 - 12 minutes / day",
+      Reading: "20 minutes / day",
+      "Recreational Screen Time": "< 120 minutes / day",
+      Water: "6 - 9 cups / day",
+      "Fruits & Vegetables": ">= 5 servings / day",
+      "Whole Foods": ">= 80% / day",
+      "Ultra-Processed Foods": "<= 20% / day",
+      "Sugary Drinks": "0"
+    },
+    "6th - 8th": {
+      Sleep: "8 - 10 hours / night",
+      "Brush Teeth": "X",
+      "Physical Activity": "60+ minutes / day",
+      "Outdoor Time": "60+ minutes / day",
+      Reading: "X",
+      "Recreational Screen Time": "X",
+      Water: "8 - 11 cups / day",
+      "Fruits & Vegetables": ">= 5 servings / day",
+      "Whole Foods": ">= 80% / day",
+      "Ultra-Processed Foods": "<= 20% / day",
+      "Sugary Drinks": "0 - 1 / day"
+    },
+    "9th - 12th": {
+      Sleep: "8 - 10 hours / night",
+      "Brush Teeth": "X",
+      "Physical Activity": "60+ minutes / day",
+      "Outdoor Time": "60+ minutes / day",
+      Reading: "X",
+      "Recreational Screen Time": "X",
+      Water: "9 - 13+ cups / day",
+      "Fruits & Vegetables": ">= 5 servings / day",
+      "Whole Foods": ">= 80% / day",
+      "Ultra-Processed Foods": "<= 20% / day",
+      "Sugary Drinks": "0 - 1 / day"
+    },
+    Increments: {
+      Sleep: "1",
+      "Brush Teeth": "1",
+      "Physical Activity": "15",
+      "Outdoor Time": "15",
+      Reading: "5",
+      "Recreational Screen Time": "20",
+      Water: "1",
+      "Fruits & Vegetables": "1",
+      "Whole Foods": "10",
+      "Ultra-Processed Foods": "10",
+      "Sugary Drinks": "1"
+    }
+  }
+};
+
+export const LOOKUP_2 = {
+  title: "Lookup 2",
+  columns: [
+    "Grade", "Water_Green", "Water_Yellow", "Water_Red",
+    "FruitsVeg_Green", "FruitsVeg_Yellow", "FruitsVeg_Red",
+    "WholeFoods_Green", "WholeFoods_Yellow", "WholeFoods_Red",
+    "UPF_Green", "UPF_Yellow", "UPF_Red",
+    "SugaryDrinks_Green", "SugaryDrinks_Yellow", "SugaryDrinks_Red"
+  ],
+  rows: {
+    "K - 5th": {
+      Water_Green: "6+", Water_Yellow: "5", Water_Red: "0-4",
+      FruitsVeg_Green: "5+", FruitsVeg_Yellow: "3-4", FruitsVeg_Red: "0-2",
+      WholeFoods_Green: "80%+", WholeFoods_Yellow: "60-70%", WholeFoods_Red: "0-50%",
+      UPF_Green: "0-20%", UPF_Yellow: "30-40%", UPF_Red: "50%+",
+      SugaryDrinks_Green: "0", SugaryDrinks_Yellow: "1", SugaryDrinks_Red: "2+"
+    },
+    "6th - 8th": {
+      Water_Green: "8+", Water_Yellow: "7", Water_Red: "0-6",
+      FruitsVeg_Green: "5+", FruitsVeg_Yellow: "3-4", FruitsVeg_Red: "0-2",
+      WholeFoods_Green: "80%+", WholeFoods_Yellow: "60-70%", WholeFoods_Red: "0-50%",
+      UPF_Green: "0-20%", UPF_Yellow: "30-40%", UPF_Red: "50%+",
+      SugaryDrinks_Green: "0-1", SugaryDrinks_Yellow: "2", SugaryDrinks_Red: "3+"
+    },
+    "9th - 12th": {
+      Water_Green: "9+", Water_Yellow: "8", Water_Red: "0-7",
+      FruitsVeg_Green: "5+", FruitsVeg_Yellow: "3-4", FruitsVeg_Red: "0-2",
+      WholeFoods_Green: "80%+", WholeFoods_Yellow: "60-70%", WholeFoods_Red: "0-50%",
+      UPF_Green: "0-20%", UPF_Yellow: "30-40%", UPF_Red: "50%+",
+      SugaryDrinks_Green: "0-1", SugaryDrinks_Yellow: "2", SugaryDrinks_Red: "3+"
+    }
+  }
+};
+
+export const LOOKUP_3 = {
+  title: "Lookup 3",
+  columns: [
+    "Grade", "Sleep_Green", "Sleep_Yellow", "Sleep_Red",
+    "Teeth_Green", "Teeth_Yellow", "Teeth_Red",
+    "PA_Green", "PA_Yellow", "PA_Red",
+    "Outdoor_Green", "Outdoor_Yellow", "Outdoor_Red",
+    "Reading_Green", "Reading_Yellow", "Reading_Red",
+    "Screen_Green", "Screen_Yellow", "Screen_Red"
+  ],
+  rows: {
+    "K - 5th": {
+      Sleep_Green: "9+", Sleep_Yellow: "8", Sleep_Red: "0-7",
+      Teeth_Green: "2+", Teeth_Yellow: "1", Teeth_Red: "0",
+      PA_Green: "60+", PA_Yellow: "30-45", PA_Red: "0-15",
+      Outdoor_Green: "60+", Outdoor_Yellow: "30-45", Outdoor_Red: "0-15",
+      Reading_Green: "20+", Reading_Yellow: "10-15", Reading_Red: "0-5",
+      Screen_Green: "<120", Screen_Yellow: "120-180", Screen_Red: "180+"
+    },
+    "6th - 8th": {
+      Sleep_Green: "8+", Sleep_Yellow: "7", Sleep_Red: "0-6",
+      Teeth_Green: "X", Teeth_Yellow: "X", Teeth_Red: "X",
+      PA_Green: "60+", PA_Yellow: "30-45", PA_Red: "0-15",
+      Outdoor_Green: "60+", Outdoor_Yellow: "30-45", Outdoor_Red: "0-15",
+      Reading_Green: "X", Reading_Yellow: "X", Reading_Red: "X",
+      Screen_Green: "X", Screen_Yellow: "X", Screen_Red: "X"
+    },
+    "9th - 12th": {
+      Sleep_Green: "8+", Sleep_Yellow: "7", Sleep_Red: "0-6",
+      Teeth_Green: "X", Teeth_Yellow: "X", Teeth_Red: "X",
+      PA_Green: "60+", PA_Yellow: "30-45", PA_Red: "0-15",
+      Outdoor_Green: "60+", Outdoor_Yellow: "30-45", Outdoor_Red: "0-15",
+      Reading_Green: "X", Reading_Yellow: "X", Reading_Red: "X",
+      Screen_Green: "X", Screen_Yellow: "X", Screen_Red: "X"
+    }
+  }
+};
+
 // --- Types & Interfaces ---
 interface DailyEntry {
   date: string; // YYYY-MM-DD
@@ -95,11 +234,11 @@ export default function App() {
     return `${mm}/${dd}/${yyyy}`;
   };
 
-  // Helper: Format ISO date string (YYYY-MM-DD) to MM/DD/YYYY
-  const formatDateToMDY = (isoStr: string) => {
-    if (!isoStr) return '';
-    const [yyyy, mm, dd] = isoStr.split('-');
-    return `${mm}/${dd}/${yyyy}`;
+  // Helper: Convert YYYY-MM-DD to MM/DD/YYYY
+  const formatDateToMDY = (dateStr: string): string => {
+    if (!dateStr) return '';
+    const [year, month, day] = dateStr.split('-');
+    return `${month}/${day}/${year}`;
   };
 
   // Helper: Get Grade for Current User
@@ -294,7 +433,6 @@ export default function App() {
   const steelBlue = '#3E6F9B';
   const cream = '#FCFAF5';
   const charBlack = '#202124';
-
   const manropeFont = "'Manrope', sans-serif";
 
   const styles: Record<string, React.CSSProperties> = {
@@ -784,15 +922,16 @@ export default function App() {
                         <select
                           value={logWater}
                           onChange={(e) => setLogWater(Number(e.target.value))}
-                          style={{ padding: '5px 10px', fontFamily: manropeFont }}
+                          style={styles.inputBox}
                         >
-                          {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((num) => (
-                            <option key={num} value={num}>{num}</option>
+                          {[...Array(14)].map((_, i) => (
+                            <option key={i} value={i}>
+                              {i} cups
+                            </option>
                           ))}
-                          <option value={13}>13+</option>
                         </select>
                       </td>
-                      <td style={styles.logTableCell}>9-13 cups / day</td>
+                      <td style={styles.logTableCell}>9 - 13 cups / day</td>
                     </tr>
                     <tr>
                       <td style={styles.logTableCell}>💤 Sleep</td>
@@ -800,25 +939,26 @@ export default function App() {
                         <select
                           value={logSleep}
                           onChange={(e) => setLogSleep(Number(e.target.value))}
-                          style={{ padding: '5px 10px', fontFamily: manropeFont }}
+                          style={styles.inputBox}
                         >
-                          {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
-                            <option key={num} value={num}>{num}</option>
+                          {[...Array(11)].map((_, i) => (
+                            <option key={i} value={i}>
+                              {i} hours
+                            </option>
                           ))}
-                          <option value={10}>10+</option>
                         </select>
                       </td>
-                      <td style={styles.logTableCell}>8-10 hours / day</td>
+                      <td style={styles.logTableCell}>8 - 10 hours / day</td>
                     </tr>
                   </tbody>
                 </table>
 
-                <button type="submit" style={{ ...styles.button, width: '150px', marginTop: '20px' }}>
-                  Submit
+                <button type="submit" style={{ ...styles.button, maxWidth: '200px' }}>
+                  Save Data
                 </button>
 
                 {logSuccessMsg && (
-                  <div style={{ color: 'green', marginTop: '10px', fontWeight: 'bold', fontFamily: manropeFont }}>
+                  <div style={{ color: 'green', marginTop: '10px', fontFamily: manropeFont, fontWeight: 'bold' }}>
                     {logSuccessMsg}
                   </div>
                 )}
@@ -828,55 +968,56 @@ export default function App() {
 
           {/* View My Daily Data Page */}
           {currentPage === 'view' && (
-            <div style={{ textAlign: 'left', fontFamily: manropeFont }}>
-              <h2 style={{ color: steelBlue, fontFamily: manropeFont, marginBottom: '5px' }}>
-                View My Daily Data (4-Week)
-              </h2>
-              <br />
+            <div style={{ textAlign: 'left', maxWidth: '800px' }}>
+              <h2 style={{ color: steelBlue, fontFamily: manropeFont }}>View My Daily Data</h2>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
-                <span style={{ fontWeight: 'bold' }}>Habit:</span>
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value as 'water' | 'sleep')}
-                  style={{ padding: '6px 12px', fontFamily: manropeFont }}
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ marginRight: '15px', fontFamily: manropeFont, fontWeight: 'bold' }}>
+                  Select Category:
+                </label>
+                <button
+                  style={{
+                    padding: '8px 16px',
+                    marginRight: '10px',
+                    backgroundColor: selectedCategory === 'water' ? steelBlue : '#EAEAEA',
+                    color: selectedCategory === 'water' ? '#FFFFFF' : charBlack,
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontFamily: manropeFont
+                  }}
+                  onClick={() => setSelectedCategory('water')}
                 >
-                  <option value="water">Water</option>
-                  <option value="sleep">Sleep</option>
-                </select>
-
-                <span style={{ color: steelBlue, fontWeight: 'bold', fontFamily: manropeFont }}>
-                  {selectedCategory === 'water' ? 'Goal: 9-13 cups / day' : 'Goal: 8-10 hours / day'}
-                </span>
+                  💧 Water
+                </button>
+                <button
+                  style={{
+                    padding: '8px 16px',
+                    backgroundColor: selectedCategory === 'sleep' ? steelBlue : '#EAEAEA',
+                    color: selectedCategory === 'sleep' ? '#FFFFFF' : charBlack,
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontFamily: manropeFont
+                  }}
+                  onClick={() => setSelectedCategory('sleep')}
+                >
+                  💤 Sleep
+                </button>
               </div>
 
               <div style={styles.gridTable}>
                 {get28DayGrid().map(({ dateStr, entry }) => {
-                  let textVal = 'Not Logged';
-                  let textColor = charBlack;
-
-                  if (entry) {
-                    const val = entry[selectedCategory];
-                    if (selectedCategory === 'water') {
-                      textVal = val === 13 ? '13+' : `${val}`;
-                      if (val >= 9) textColor = 'green';
-                      else if (val === 8) textColor = '#D4AC0D';
-                      else textColor = 'red';
-                    } else {
-                      textVal = val === 10 ? '10+' : `${val}`;
-                      if (val >= 8) textColor = 'green';
-                      else if (val === 7) textColor = '#D4AC0D';
-                      else textColor = 'red';
-                    }
-                  }
+                  const val = entry ? entry[selectedCategory] : undefined;
+                  const unit = selectedCategory === 'water' ? 'cups' : 'hrs';
 
                   return (
                     <div key={dateStr} style={styles.gridCell}>
                       <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
                         {formatDateToMDY(dateStr)}
                       </div>
-                      <div style={{ color: textColor, fontWeight: entry ? 'bold' : 'normal' }}>
-                        {textVal}
+                      <div>
+                        {val !== undefined ? `${val} ${unit}` : '-'}
                       </div>
                     </div>
                   );
