@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 
-// LOGO URLs updated per Edit 13
-const MAIN_LOGO_URL = 'https://chatgpt.com/s/m_6a664a1ffaac819184375317f4022ec6';
-const NAV_LOGO_URL = 'https://chatgpt.com/c/6a5a6d73-1d64-83ea-8bdc-ae8469ffa60f';
+// --- LOGO URLs (Updated per Edit 14) --- 
+const MAIN_LOGO_URL = 'https://chatgpt.com/backend-api/estuary/public_content/enc/eyJpZCI6Im1fNmE2NjRhMWZmYWFjODE5MTg0Mzc1MzE3ZjQwMjJlYzY6ZmlsZV8wMDAwMDAwMGFmYzA4MjBjYjNiODNhOGI0NDc1ZTgxMSIsImdpem1vX2lkIjpudWxsLCJ3aWQiOm51bGwsIm9pZCI6bnVsbCwidHMiOiIyMDY2MSIsInAiOiJweWkiLCJjaWQiOiIxIiwic2lnIjoiOWNlODg4YmMzMzNhZTYzYTc0NTJiOWM4NjVhNGMzOTEyNjllMGQ5MTU2YzU1ZWRkYWVkYzNmNGVkNTMyNDYyYSIsInYiOiIwIiwiY3MiOm51bGwsImNkbiI6bnVsbCwiZm4iOm51bGwsImNkIjpudWxsLCJjcCI6bnVsbCwibWEiOm51bGx9';
+const NAV_LOGO_URL = 'https://chatgpt.com/backend-api/estuary/content?id=file_00000000284881f59e0145e45b960bf8&ts=495883&p=fs&cid=1&sig=0e259d2963519c6147329d34157d809dc71fb5196d0e7b8812fdd87c544e571d&v=0';
 
 // ==========================================
-// --- BACKGROUND LOOKUP TABLES ---
+// --- BACKGROUND LOOKUP TABLES (Edit 12) --- 
 // ==========================================
 
 export const LOOKUP_1 = {
@@ -144,18 +144,43 @@ export const LOOKUP_3 = {
 };
 
 // --- Types & Interfaces ---
-interface DailyEntry {
+export type HabitKey =
+  | 'sleep'
+  | 'physicalActivity'
+  | 'water'
+  | 'fruitsVeg'
+  | 'wholeFoods'
+  | 'upf'
+  | 'sugaryDrinks'
+  | 'mood';
+
+export interface DailyEntry {
   date: string; // YYYY-MM-DD
-  water: number; // 0 to 13
-  sleep: number; // 0 to 10
+  sleep?: number;
+  physicalActivity?: number;
+  water?: number;
+  fruitsVeg?: number;
+  wholeFoods?: number;
+  upf?: number;
+  sugaryDrinks?: number;
+  mood?: number;
 }
 
-interface UserData {
+export interface UserData {
   username: string;
   role: 'Teacher' | 'Student';
   grade?: 'K - 5th' | '6th - 8th' | '9th - 12th' | '';
   classroomCode: string;
-  entries: Record<string, DailyEntry>; // Keyed by YYYY-MM-DD
+  entries: Record<string, DailyEntry>;
+}
+
+interface HabitConfig {
+  key: HabitKey;
+  label: string;
+  icon: string | React.ReactNode;
+  options: { label: string; value: number }[];
+  goal: string;
+  getColor: (val: number) => 'red' | 'yellow' | 'green';
 }
 
 export default function App() {
@@ -182,13 +207,21 @@ export default function App() {
   const [codeCustomError, setCodeCustomError] = useState('');
   const [generalRegError, setGeneralRegError] = useState(false);
 
-  // Log Data Inputs
-  const [logWater, setLogWater] = useState<number>(0);
-  const [logSleep, setLogSleep] = useState<number>(0);
+  // Log Data Inputs (Default states for 8 habits)
+  const [logData, setLogData] = useState<Record<HabitKey, number>>({
+    sleep: 0,
+    physicalActivity: 0,
+    water: 0,
+    fruitsVeg: 0,
+    wholeFoods: 0,
+    upf: 0,
+    sugaryDrinks: 0,
+    mood: 1
+  });
   const [logSuccessMsg, setLogSuccessMsg] = useState('');
 
   // View Data State
-  const [selectedCategory, setSelectedCategory] = useState<'water' | 'sleep'>('water');
+  const [selectedCategory, setSelectedCategory] = useState<HabitKey>('sleep');
 
   // Database stored in LocalStorage
   const [usersDb, setUsersDb] = useState<Record<string, UserData>>({});
@@ -241,20 +274,150 @@ export default function App() {
     return `${month}/${day}/${year}`;
   };
 
-  // Helper: Get Grade for Current User
+  // Helper: Get Grade for Current User (Edit 15 requirement) 
   const getCurrentUserGrade = (): string => {
-    if (!currentUser || !usersDb[currentUser]) return '';
+    if (!currentUser || !usersDb[currentUser]) return 'N/A';
     const user = usersDb[currentUser];
     if (user.role === 'Teacher' && user.grade) {
       return user.grade;
     }
 
     const userCode = (user.classroomCode || '').trim().toLowerCase();
-
     const teacher = Object.values(usersDb).find(
       (u) => u.role === 'Teacher' && (u.classroomCode || '').trim().toLowerCase() === userCode
     );
     return teacher?.grade || user.grade || 'N/A';
+  };
+
+  // Helper: Get Habit Configuration based on Grade (Edit 15 specifications) 
+  const getHabitConfigs = (gradeStr: string): HabitConfig[] => {
+    const isK5 = gradeStr === 'K - 5th';
+    const is68 = gradeStr === '6th - 8th';
+
+    return [
+      {
+        key: 'sleep',
+        label: 'Sleep',
+        icon: '💤',
+        options: isK5
+          ? Array.from({ length: 13 }, (_, i) => ({ label: i === 12 ? '12+' : `${i}`, value: i }))
+          : Array.from({ length: 11 }, (_, i) => ({ label: i === 10 ? '10+' : `${i}`, value: i })),
+        goal: isK5 ? '9 - 12 hours / night' : '8 - 10 hours / night',
+        getColor: (val) => {
+          if (isK5) {
+            if (val >= 9) return 'green';
+            if (val === 8) return 'yellow';
+            return 'red';
+          } else {
+            if (val >= 8) return 'green';
+            if (val === 7) return 'yellow';
+            return 'red';
+          }
+        }
+      },
+      {
+        key: 'physicalActivity',
+        label: 'Physical Activity',
+        icon: '🏃',
+        options: [0, 15, 30, 45, 60].map((v) => ({ label: v === 60 ? '60+' : `${v}`, value: v })),
+        goal: '60+ minutes / day',
+        getColor: (val) => {
+          if (val >= 60) return 'green';
+          if (val === 45) return 'yellow';
+          return 'red';
+        }
+      },
+      {
+        key: 'water',
+        label: 'Water',
+        icon: '💧',
+        options: isK5
+          ? Array.from({ length: 10 }, (_, i) => ({ label: i === 9 ? '9+' : `${i}`, value: i }))
+          : is68
+          ? Array.from({ length: 12 }, (_, i) => ({ label: i === 11 ? '11+' : `${i}`, value: i }))
+          : Array.from({ length: 14 }, (_, i) => ({ label: i === 13 ? '13+' : `${i}`, value: i })),
+        goal: isK5 ? '6 - 9 cups / day' : is68 ? '8 - 11 cups / day' : '9 - 13 cups / day',
+        getColor: (val) => {
+          if (isK5) {
+            if (val >= 6) return 'green';
+            if (val === 5) return 'yellow';
+            return 'red';
+          } else if (is68) {
+            if (val >= 8) return 'green';
+            if (val === 7) return 'yellow';
+            return 'red';
+          } else {
+            if (val >= 9) return 'green';
+            if (val === 8) return 'yellow';
+            return 'red';
+          }
+        }
+      },
+      {
+        key: 'fruitsVeg',
+        label: 'Fruits & Vegetables',
+        icon: '🥗',
+        options: Array.from({ length: 6 }, (_, i) => ({ label: i === 5 ? '5+' : `${i}`, value: i })),
+        goal: '>= 5 servings / day',
+        getColor: (val) => {
+          if (val >= 5) return 'green';
+          if (val === 4) return 'yellow';
+          return 'red';
+        }
+      },
+      {
+        key: 'wholeFoods',
+        label: 'Whole Foods',
+        icon: '🍎',
+        options: [0, 10, 20, 30, 40, 50, 60, 70, 80].map((v) => ({ label: v === 80 ? '80+' : `${v}`, value: v })),
+        goal: '>= 80% / day',
+        getColor: (val) => {
+          if (val >= 80) return 'green';
+          if (val === 70) return 'yellow';
+          return 'red';
+        }
+      },
+      {
+        key: 'upf',
+        label: 'Ultra-Processed Foods',
+        icon: '🍔',
+        options: [0, 10, 20, 30, 40].map((v) => ({ label: v === 40 ? '40+' : `${v}`, value: v })),
+        goal: '<= 20% / day',
+        getColor: (val) => {
+          if (val <= 20) return 'green';
+          if (val === 30) return 'yellow';
+          return 'red';
+        }
+      },
+      {
+        key: 'sugaryDrinks',
+        label: 'Sugary Drinks',
+        icon: '🥤',
+        options: isK5
+          ? [{ label: '0', value: 0 }, { label: '1+', value: 1 }]
+          : [{ label: '0', value: 0 }, { label: '1', value: 1 }, { label: '2+', value: 2 }],
+        goal: isK5 ? '0 drinks / day' : '0 - 1 drinks / day',
+        getColor: (val) => {
+          if (isK5) {
+            return val === 0 ? 'green' : 'red';
+          } else {
+            return val <= 1 ? 'green' : 'red';
+          }
+        }
+      },
+      {
+        key: 'mood',
+        label: 'Mood',
+        icon: <span style={{ color: '#D4AC0D' }}>⭐</span>,
+        options: [{ label: '1', value: 1 }, { label: '2', value: 2 }, { label: '3', value: 3 }],
+        goal: '3 stars',
+        getColor: (val) => {
+          if (val >= 3) return 'green';
+          if (val === 2) return 'yellow';
+          return 'red';
+        }
+      }
+    ];
   };
 
   // --- Handlers ---
@@ -364,7 +527,10 @@ export default function App() {
     const todayISO = getTodayESTISO();
     const user = usersDb[currentUser];
 
-    const newEntries = { ...(user.entries || {}), [todayISO]: { date: todayISO, water: logWater, sleep: logSleep } };
+    const newEntries = {
+      ...(user.entries || {}),
+      [todayISO]: { date: todayISO, ...logData }
+    };
 
     const sortedKeys = Object.keys(newEntries).sort();
     if (sortedKeys.length > 28) {
@@ -388,12 +554,14 @@ export default function App() {
     return Object.values(entriesObj).sort((a, b) => a.date.localeCompare(b.date));
   };
 
-  const getWeeklyAverage = (type: 'water' | 'sleep') => {
+  const getWeeklyAverage = (key: HabitKey) => {
     const entries = getUserEntries();
     if (entries.length === 0) return 0;
     const last7 = entries.slice(-7);
-    const sum = last7.reduce((acc, curr) => acc + curr[type], 0);
-    return Math.round((sum / last7.length) * 10) / 10;
+    const valid = last7.map((e) => e[key]).filter((v): v is number => v !== undefined);
+    if (valid.length === 0) return 0;
+    const sum = valid.reduce((acc, curr) => acc + curr, 0);
+    return Math.round((sum / valid.length) * 10) / 10;
   };
 
   const get28DayGrid = () => {
@@ -416,16 +584,9 @@ export default function App() {
     return result;
   };
 
-  // Scorecard Status Indicators
-  const renderWaterIcon = (avg: number) => {
-    if (avg >= 9) return <span style={{ color: 'green', fontWeight: 'bold' }}>✓</span>;
-    if (avg === 8) return <span style={{ color: '#D4AC0D', fontWeight: 'bold' }}>●</span>;
-    return <span style={{ color: 'red', fontWeight: 'bold' }}>✕</span>;
-  };
-
-  const renderSleepIcon = (avg: number) => {
-    if (avg >= 8) return <span style={{ color: 'green', fontWeight: 'bold' }}>✓</span>;
-    if (avg === 7) return <span style={{ color: '#D4AC0D', fontWeight: 'bold' }}>●</span>;
+  const renderStatusIcon = (color: 'red' | 'yellow' | 'green') => {
+    if (color === 'green') return <span style={{ color: 'green', fontWeight: 'bold' }}>✓</span>;
+    if (color === 'yellow') return <span style={{ color: '#D4AC0D', fontWeight: 'bold' }}>●</span>;
     return <span style={{ color: 'red', fontWeight: 'bold' }}>✕</span>;
   };
 
@@ -449,25 +610,24 @@ export default function App() {
       marginBottom: '20px'
     },
     mainLogoImage: {
-      maxWidth: '440px',
-      maxHeight: '280px',
+      width: '100%',
+      maxWidth: '420px',
       objectFit: 'contain',
-      margin: '15px auto',
+      margin: '0 auto 15px auto',
       display: 'block'
     },
     navLogoImage: {
-      width: '100px', // Half the width of nav buttons (200px) per Edit 13
-      maxWidth: '100px',
-      maxHeight: '128px',
+      width: '100%',
+      maxWidth: '200px', // Matches width of navigation buttons per Edit 14
       objectFit: 'contain',
       margin: '0 auto 20px auto',
       display: 'block'
     },
     headerLogoImage: {
-      maxWidth: '540px',
-      maxHeight: '270px',
+      width: '100%',
+      maxWidth: '420px', // Same width as login/register per Edit 14
       objectFit: 'contain',
-      margin: '0 0 5px 0',
+      margin: '0 0 10px 0',
       display: 'block'
     },
     authContainer: {
@@ -603,11 +763,8 @@ export default function App() {
     return (
       <div style={styles.appContainer}>
         <div style={{ padding: '40px 20px' }}>
-          <div style={styles.centerHeader}>
-            <img src={MAIN_LOGO_URL} alt="HealthyHabitsED Logo" style={styles.mainLogoImage} />
-          </div>
-
           <div style={styles.authContainer}>
+            <img src={MAIN_LOGO_URL} alt="HealthyHabitsED Logo" style={styles.mainLogoImage} />
             <h2 style={{ color: charBlack, marginBottom: '5px', fontFamily: manropeFont }}>Login</h2>
 
             <form onSubmit={handleLogin}>
@@ -653,11 +810,8 @@ export default function App() {
     return (
       <div style={styles.appContainer}>
         <div style={{ padding: '40px 20px' }}>
-          <div style={styles.centerHeader}>
-            <img src={MAIN_LOGO_URL} alt="HealthyHabitsED Logo" style={styles.mainLogoImage} />
-          </div>
-
           <div style={styles.authContainer}>
+            <img src={MAIN_LOGO_URL} alt="HealthyHabitsED Logo" style={styles.mainLogoImage} />
             <h2 style={{ color: charBlack, marginBottom: '5px', fontFamily: manropeFont }}>Register</h2>
 
             <form onSubmit={handleRegister}>
@@ -748,7 +902,6 @@ export default function App() {
                 )}
               </div>
 
-              {/* EDIT 13: Updated heading to "What is your classroom code?" */}
               <div style={styles.sectionHeadingBlue}>What is your classroom code?</div>
               <div style={{ fontFamily: manropeFont }}>
                 <input
@@ -804,15 +957,13 @@ export default function App() {
   }
 
   // --- DASHBOARD WRAPPER (Home, Log, View) ---
-  const waterAvg = getWeeklyAverage('water');
-  const sleepAvg = getWeeklyAverage('sleep');
   const currentUserGrade = getCurrentUserGrade();
+  const habitConfigs = getHabitConfigs(currentUserGrade);
 
   return (
     <div style={styles.appContainer}>
       <div style={styles.dashboardLayout}>
         <div style={styles.sidebar}>
-          {/* EDIT 13: Updated NAV logo URL & width */}
           <img src={NAV_LOGO_URL} alt="HealthyHabitsED Logo" style={styles.navLogoImage} />
 
           <button
@@ -871,7 +1022,7 @@ export default function App() {
 
           {/* Home / Weekly Scorecard */}
           {currentPage === 'home' && (
-            <div style={{ textAlign: 'left', maxWidth: '600px' }}>
+            <div style={{ textAlign: 'left', maxWidth: '700px' }}>
               <h2 style={{ color: steelBlue, fontFamily: manropeFont }}>
                 My Healthy Habits Scorecard (Weekly Average)
               </h2>
@@ -885,20 +1036,24 @@ export default function App() {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <td style={styles.logTableCell}>💧 Water</td>
-                    <td style={styles.logTableCell}>9 - 13 cups / day</td>
-                    <td style={styles.logTableCell}>
-                      {waterAvg} <span style={{ marginLeft: '10px' }}>{renderWaterIcon(waterAvg)}</span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style={styles.logTableCell}>💤 Sleep</td>
-                    <td style={styles.logTableCell}>8 - 10 hours / day</td>
-                    <td style={styles.logTableCell}>
-                      {sleepAvg} <span style={{ marginLeft: '10px' }}>{renderSleepIcon(sleepAvg)}</span>
-                    </td>
-                  </tr>
+                  {habitConfigs.map((cfg) => {
+                    const avg = getWeeklyAverage(cfg.key);
+                    const color = cfg.getColor(avg);
+                    const fontColor = color === 'yellow' ? '#D4AC0D' : color;
+
+                    return (
+                      <tr key={cfg.key}>
+                        <td style={styles.logTableCell}>
+                          <span style={{ marginRight: '8px' }}>{cfg.icon}</span>
+                          {cfg.label}
+                        </td>
+                        <td style={styles.logTableCell}>{cfg.goal}</td>
+                        <td style={{ ...styles.logTableCell, color: fontColor, fontWeight: 'bold' }}>
+                          {avg} <span style={{ marginLeft: '10px' }}>{renderStatusIcon(color)}</span>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -906,7 +1061,7 @@ export default function App() {
 
           {/* Log My Daily Data Page */}
           {currentPage === 'log' && (
-            <div style={{ textAlign: 'left', maxWidth: '600px' }}>
+            <div style={{ textAlign: 'left', maxWidth: '700px' }}>
               <h2 style={{ color: steelBlue, fontFamily: manropeFont }}>Log My Daily Data</h2>
 
               <form onSubmit={handleLogSubmit}>
@@ -919,36 +1074,30 @@ export default function App() {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr>
-                      <td style={styles.logTableCell}>💧 Water</td>
-                      <td style={styles.logTableCell}>
-                        <select
-                          value={logWater}
-                          onChange={(e) => setLogWater(Number(e.target.value))}
-                          style={styles.inputBox}
-                        >
-                          {[...Array(14)].map((_, i) => (
-                            <option key={i} value={i}>{i === 13 ? '13+' : i}</option>
-                          ))}
-                        </select>
-                      </td>
-                      <td style={styles.logTableCell}>9 - 13 cups / day</td>
-                    </tr>
-                    <tr>
-                      <td style={styles.logTableCell}>💤 Sleep</td>
-                      <td style={styles.logTableCell}>
-                        <select
-                          value={logSleep}
-                          onChange={(e) => setLogSleep(Number(e.target.value))}
-                          style={styles.inputBox}
-                        >
-                          {[...Array(11)].map((_, i) => (
-                            <option key={i} value={i}>{i === 10 ? '10+' : i}</option>
-                          ))}
-                        </select>
-                      </td>
-                      <td style={styles.logTableCell}>8 - 10 hours / day</td>
-                    </tr>
+                    {habitConfigs.map((cfg) => (
+                      <tr key={cfg.key}>
+                        <td style={styles.logTableCell}>
+                          <span style={{ marginRight: '8px' }}>{cfg.icon}</span>
+                          {cfg.label}
+                        </td>
+                        <td style={styles.logTableCell}>
+                          <select
+                            value={logData[cfg.key]}
+                            onChange={(e) =>
+                              setLogData({ ...logData, [cfg.key]: Number(e.target.value) })
+                            }
+                            style={{ ...styles.inputBox, width: '120px' }}
+                          >
+                            {cfg.options.map((opt) => (
+                              <option key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td style={styles.logTableCell}>{cfg.goal}</td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
 
@@ -958,7 +1107,7 @@ export default function App() {
               </form>
 
               {logSuccessMsg && (
-                <div style={{ color: 'green', marginTop: '10px', fontWeight: 'bold' }}>
+                <div style={{ color: 'green', marginTop: '10px', fontWeight: 'bold', fontFamily: manropeFont }}>
                   {logSuccessMsg}
                 </div>
               )}
@@ -970,40 +1119,37 @@ export default function App() {
             <div style={{ textAlign: 'left' }}>
               <h2 style={{ color: steelBlue, fontFamily: manropeFont }}>View My Daily Data (4-Week)</h2>
 
-              {/* EDIT 13: "Habit:" title in blue, "Goal:" title in blue, Goal text/numbers in black */}
+              {/* Edit 13 & 15: Dropdown with Habit and Goal */}
               <div style={{ marginBottom: '20px', fontSize: '16px', fontFamily: manropeFont }}>
                 <span style={{ color: steelBlue, fontWeight: 'bold' }}>Habit: </span>
                 <select
                   value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value as 'water' | 'sleep')}
-                  style={{ ...styles.inputBox, width: '150px', display: 'inline-block', margin: '0 15px 0 5px', color: charBlack }}
+                  onChange={(e) => setSelectedCategory(e.target.value as HabitKey)}
+                  style={{ ...styles.inputBox, width: '220px', display: 'inline-block', margin: '0 15px 0 5px', color: charBlack }}
                 >
-                  <option value="water" style={{ color: charBlack }}>Water</option>
-                  <option value="sleep" style={{ color: charBlack }}>Sleep</option>
+                  {habitConfigs.map((cfg) => (
+                    <option key={cfg.key} value={cfg.key} style={{ color: charBlack }}>
+                      {cfg.label}, {cfg.goal}
+                    </option>
+                  ))}
                 </select>
 
                 <span style={{ color: steelBlue, fontWeight: 'bold' }}>Goal: </span>
                 <span style={{ color: charBlack }}>
-                  {selectedCategory === 'water' ? '9 - 13 cups / day' : '8 - 10 hours / day'}
+                  {habitConfigs.find((c) => c.key === selectedCategory)?.goal}
                 </span>
               </div>
 
               {/* 28-Day Calendar Grid */}
               <div style={styles.gridTable}>
                 {get28DayGrid().map(({ dateStr, entry }) => {
-                  const val = entry ? entry[selectedCategory] : null;
+                  const val = entry ? entry[selectedCategory] : undefined;
+                  const currentCfg = habitConfigs.find((c) => c.key === selectedCategory);
+                  
                   let fontColor = charBlack;
-
-                  if (val !== null) {
-                    if (selectedCategory === 'water') {
-                      if (val >= 9) fontColor = 'green';
-                      else if (val === 8) fontColor = '#D4AC0D';
-                      else fontColor = 'red';
-                    } else {
-                      if (val >= 8) fontColor = 'green';
-                      else if (val === 7) fontColor = '#D4AC0D';
-                      else fontColor = 'red';
-                    }
+                  if (val !== undefined && currentCfg) {
+                    const color = currentCfg.getColor(val);
+                    fontColor = color === 'yellow' ? '#D4AC0D' : color;
                   }
 
                   return (
@@ -1012,7 +1158,7 @@ export default function App() {
                         {formatDateToMDY(dateStr)}
                       </div>
                       <div style={{ fontSize: '16px', fontWeight: 'bold', color: fontColor }}>
-                        {val !== null ? val : 'Not Logged'}
+                        {val !== undefined ? val : 'Not Logged'}
                       </div>
                     </div>
                   );
