@@ -271,7 +271,7 @@ export default function App() {
     return `${month}/${day}/${year}`;
   };
 
-  // Helper: Get Grade for Current User (Edit 15 requirement)
+  // Helper: Get Grade for Current User
   const getCurrentUserGrade = (): string => {
     if (!currentUser || !usersDb[currentUser]) return 'N/A';
     const user = usersDb[currentUser];
@@ -286,7 +286,7 @@ export default function App() {
     return teacher?.grade || user.grade || 'N/A';
   };
 
-  // --- EDIT 15: Grade-adaptive Habit Configurations ---
+  // --- Grade-adaptive Habit Configurations ---
   const getHabitsConfig = (grade: string): HabitConfig[] => {
     if (grade === 'K - 5th') {
       return [
@@ -311,7 +311,6 @@ export default function App() {
         { key: 'mood', label: 'Mood', icon: '⭐', selections: [1, 2, 3], goal: '3 stars' },
       ];
     } else {
-      // 9th - 12th OR unknown OR N/A
       return [
         { key: 'sleep', label: 'Sleep', icon: '💤', selections: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], selectionLabels: { 10: '10+' }, goal: '8 - 10 hours / night' },
         { key: 'physicalActivity', label: 'Physical Activity', icon: '🏃', selections: [0, 15, 30, 45, 60], selectionLabels: { 60: '60+' }, goal: '60+ minutes / day' },
@@ -325,7 +324,7 @@ export default function App() {
     }
   };
 
-  // --- EDIT 15: Color Coding Helper ---
+  // --- Color Coding Helper ---
   const getHabitColor = (key: HabitKey, val: number, grade: string): 'red' | 'yellow' | 'green' => {
     if (grade === 'K - 5th') {
       switch (key) {
@@ -366,7 +365,6 @@ export default function App() {
           return val >= 3 ? 'green' : val === 2 ? 'yellow' : 'red';
       }
     } else {
-      // 9th - 12th / unknown / N/A
       switch (key) {
         case 'sleep':
           return val >= 8 ? 'green' : val === 7 ? 'yellow' : 'red';
@@ -584,10 +582,12 @@ export default function App() {
       margin: '15px auto',
       display: 'block'
     },
+    // UPDATED: Fixed sizing rules so top-left logo displays cleanly
     navLogoImage: {
-      width: '100px',
-      maxWidth: '100px',
-      maxHeight: '128px',
+      width: '100%',
+      maxWidth: '120px',
+      height: 'auto',
+      maxHeight: '120px',
       objectFit: 'contain',
       margin: '0 auto 20px auto',
       display: 'block'
@@ -939,8 +939,19 @@ export default function App() {
     <div style={styles.appContainer}>
       <div style={styles.dashboardLayout}>
         <div style={styles.sidebar}>
-          <img src={logo} alt="HealthyHabitsED Logo" style={styles.navLogoImage} />
-
+<div style={{ width: '100%', display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+  <img 
+    src={logo} 
+    alt="HealthyHabitsED Logo" 
+    style={{
+      maxWidth: '120px',
+      width: '100%',
+      height: 'auto',
+      display: 'block',
+      objectFit: 'contain'
+    }} 
+  />
+</div>
           <button
             style={{
               ...styles.navButton,
@@ -995,7 +1006,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* Home / Weekly Scorecard (EDIT 15 Requirement) */}
+          {/* Home / Weekly Scorecard */}
           {currentPage === 'home' && (
             <div style={{ textAlign: 'left', maxWidth: '700px' }}>
               <h2 style={{ color: steelBlue, fontFamily: manropeFont }}>
@@ -1030,7 +1041,7 @@ export default function App() {
             </div>
           )}
 
-          {/* Log My Daily Data Page (EDIT 15 Requirement) */}
+          {/* Log My Daily Data Page */}
           {currentPage === 'log' && (
             <div style={{ textAlign: 'left', maxWidth: '700px' }}>
               <h2 style={{ color: steelBlue, fontFamily: manropeFont }}>Log My Daily Data</h2>
@@ -1089,7 +1100,7 @@ export default function App() {
             </div>
           )}
 
-          {/* View My Daily Data Page (EDIT 15 Requirement) */}
+          {/* View My Daily Data Page */}
           {currentPage === 'view' && (
             <div style={{ textAlign: 'left' }}>
               <h2 style={{ color: steelBlue, fontFamily: manropeFont }}>View My Daily Data (4-Week)</h2>
