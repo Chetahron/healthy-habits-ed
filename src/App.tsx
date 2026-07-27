@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import logoImg from './assets/logo.png';
 
-// LOGO URL defined from imported asset
-const LOGO_URL = logoImg;
+// LOGO URLs updated per Edit 13
+const MAIN_LOGO_URL = 'https://chatgpt.com/s/m_6a664a1ffaac819184375317f4022ec6';
+const NAV_LOGO_URL = 'https://chatgpt.com/c/6a5a6d73-1d64-83ea-8bdc-ae8469ffa60f';
 
 // ==========================================
-// --- EDIT 12: BACKGROUND LOOKUP TABLES ---
+// --- BACKGROUND LOOKUP TABLES ---
 // ==========================================
 
 export const LOOKUP_1 = {
@@ -456,7 +456,8 @@ export default function App() {
       display: 'block'
     },
     navLogoImage: {
-      maxWidth: '192px',
+      width: '100px', // Half the width of nav buttons (200px) per Edit 13
+      maxWidth: '100px',
       maxHeight: '128px',
       objectFit: 'contain',
       margin: '0 auto 20px auto',
@@ -603,7 +604,7 @@ export default function App() {
       <div style={styles.appContainer}>
         <div style={{ padding: '40px 20px' }}>
           <div style={styles.centerHeader}>
-            <img src={LOGO_URL} alt="HealthyHabitsED Logo" style={styles.mainLogoImage} />
+            <img src={MAIN_LOGO_URL} alt="HealthyHabitsED Logo" style={styles.mainLogoImage} />
           </div>
 
           <div style={styles.authContainer}>
@@ -653,7 +654,7 @@ export default function App() {
       <div style={styles.appContainer}>
         <div style={{ padding: '40px 20px' }}>
           <div style={styles.centerHeader}>
-            <img src={LOGO_URL} alt="HealthyHabitsED Logo" style={styles.mainLogoImage} />
+            <img src={MAIN_LOGO_URL} alt="HealthyHabitsED Logo" style={styles.mainLogoImage} />
           </div>
 
           <div style={styles.authContainer}>
@@ -747,7 +748,8 @@ export default function App() {
                 )}
               </div>
 
-              <div style={styles.sectionHeadingBlue}>What is your classroom id?</div>
+              {/* EDIT 13: Updated heading to "What is your classroom code?" */}
+              <div style={styles.sectionHeadingBlue}>What is your classroom code?</div>
               <div style={{ fontFamily: manropeFont }}>
                 <input
                   type="text"
@@ -810,7 +812,8 @@ export default function App() {
     <div style={styles.appContainer}>
       <div style={styles.dashboardLayout}>
         <div style={styles.sidebar}>
-          <img src={LOGO_URL} alt="HealthyHabitsED Logo" style={styles.navLogoImage} />
+          {/* EDIT 13: Updated NAV logo URL & width */}
+          <img src={NAV_LOGO_URL} alt="HealthyHabitsED Logo" style={styles.navLogoImage} />
 
           <button
             style={{
@@ -854,9 +857,9 @@ export default function App() {
         </div>
 
         <div style={styles.mainContent}>
-          {/* Left-aligned top header for all 3 pages */}
+          {/* Top header image and info */}
           <div style={{ textAlign: 'left', marginBottom: '25px' }}>
-            <img src={LOGO_URL} alt="HealthyHabitsED Logo" style={styles.headerLogoImage} />
+            <img src={MAIN_LOGO_URL} alt="HealthyHabitsED Logo" style={styles.headerLogoImage} />
 
             <div style={{ color: charBlack, fontFamily: manropeFont, fontSize: '16px' }}>
               My Grade: {currentUserGrade}
@@ -925,9 +928,7 @@ export default function App() {
                           style={styles.inputBox}
                         >
                           {[...Array(14)].map((_, i) => (
-                            <option key={i} value={i}>
-                              {i} cups
-                            </option>
+                            <option key={i} value={i}>{i === 13 ? '13+' : i}</option>
                           ))}
                         </select>
                       </td>
@@ -942,9 +943,7 @@ export default function App() {
                           style={styles.inputBox}
                         >
                           {[...Array(11)].map((_, i) => (
-                            <option key={i} value={i}>
-                              {i} hours
-                            </option>
+                            <option key={i} value={i}>{i === 10 ? '10+' : i}</option>
                           ))}
                         </select>
                       </td>
@@ -953,71 +952,67 @@ export default function App() {
                   </tbody>
                 </table>
 
-                <button type="submit" style={{ ...styles.button, maxWidth: '200px' }}>
-                  Save Data
+                <button type="submit" style={{ ...styles.button, width: '200px', marginTop: '20px' }}>
+                  Submit
                 </button>
-
-                {logSuccessMsg && (
-                  <div style={{ color: 'green', marginTop: '10px', fontFamily: manropeFont, fontWeight: 'bold' }}>
-                    {logSuccessMsg}
-                  </div>
-                )}
               </form>
+
+              {logSuccessMsg && (
+                <div style={{ color: 'green', marginTop: '10px', fontWeight: 'bold' }}>
+                  {logSuccessMsg}
+                </div>
+              )}
             </div>
           )}
 
           {/* View My Daily Data Page */}
           {currentPage === 'view' && (
-            <div style={{ textAlign: 'left', maxWidth: '800px' }}>
-              <h2 style={{ color: steelBlue, fontFamily: manropeFont }}>View My Daily Data</h2>
+            <div style={{ textAlign: 'left' }}>
+              <h2 style={{ color: steelBlue, fontFamily: manropeFont }}>View My Daily Data (4-Week)</h2>
 
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ marginRight: '15px', fontFamily: manropeFont, fontWeight: 'bold' }}>
-                  Select Category:
-                </label>
-                <button
-                  style={{
-                    padding: '8px 16px',
-                    marginRight: '10px',
-                    backgroundColor: selectedCategory === 'water' ? steelBlue : '#EAEAEA',
-                    color: selectedCategory === 'water' ? '#FFFFFF' : charBlack,
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontFamily: manropeFont
-                  }}
-                  onClick={() => setSelectedCategory('water')}
+              {/* EDIT 13: "Habit:" title in blue, "Goal:" title in blue, Goal text/numbers in black */}
+              <div style={{ marginBottom: '20px', fontSize: '16px', fontFamily: manropeFont }}>
+                <span style={{ color: steelBlue, fontWeight: 'bold' }}>Habit: </span>
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value as 'water' | 'sleep')}
+                  style={{ ...styles.inputBox, width: '150px', display: 'inline-block', margin: '0 15px 0 5px', color: charBlack }}
                 >
-                  💧 Water
-                </button>
-                <button
-                  style={{
-                    padding: '8px 16px',
-                    backgroundColor: selectedCategory === 'sleep' ? steelBlue : '#EAEAEA',
-                    color: selectedCategory === 'sleep' ? '#FFFFFF' : charBlack,
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontFamily: manropeFont
-                  }}
-                  onClick={() => setSelectedCategory('sleep')}
-                >
-                  💤 Sleep
-                </button>
+                  <option value="water" style={{ color: charBlack }}>Water</option>
+                  <option value="sleep" style={{ color: charBlack }}>Sleep</option>
+                </select>
+
+                <span style={{ color: steelBlue, fontWeight: 'bold' }}>Goal: </span>
+                <span style={{ color: charBlack }}>
+                  {selectedCategory === 'water' ? '9 - 13 cups / day' : '8 - 10 hours / day'}
+                </span>
               </div>
 
+              {/* 28-Day Calendar Grid */}
               <div style={styles.gridTable}>
                 {get28DayGrid().map(({ dateStr, entry }) => {
-                  const val = entry ? entry[selectedCategory] : undefined;
-                  const unit = selectedCategory === 'water' ? 'cups' : 'hrs';
+                  const val = entry ? entry[selectedCategory] : null;
+                  let fontColor = charBlack;
+
+                  if (val !== null) {
+                    if (selectedCategory === 'water') {
+                      if (val >= 9) fontColor = 'green';
+                      else if (val === 8) fontColor = '#D4AC0D';
+                      else fontColor = 'red';
+                    } else {
+                      if (val >= 8) fontColor = 'green';
+                      else if (val === 7) fontColor = '#D4AC0D';
+                      else fontColor = 'red';
+                    }
+                  }
 
                   return (
                     <div key={dateStr} style={styles.gridCell}>
-                      <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
+                      <div style={{ fontSize: '11px', color: '#666', marginBottom: '4px' }}>
                         {formatDateToMDY(dateStr)}
                       </div>
-                      <div>
-                        {val !== undefined ? `${val} ${unit}` : '-'}
+                      <div style={{ fontSize: '16px', fontWeight: 'bold', color: fontColor }}>
+                        {val !== null ? val : 'Not Logged'}
                       </div>
                     </div>
                   );
