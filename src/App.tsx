@@ -1,11 +1,8 @@
 import React, { useState, useEffect } from 'react';
-
-// --- LOGO URLs (Updated per Edit 14) --- 
-const MAIN_LOGO_URL = 'https://chatgpt.com/backend-api/estuary/public_content/enc/eyJpZCI6Im1fNmE2NjRhMWZmYWFjODE5MTg0Mzc1MzE3ZjQwMjJlYzY6ZmlsZV8wMDAwMDAwMGFmYzA4MjBjYjNiODNhOGI0NDc1ZTgxMSIsImdpem1vX2lkIjpudWxsLCJ3aWQiOm51bGwsIm9pZCI6bnVsbCwidHMiOiIyMDY2MSIsInAiOiJweWkiLCJjaWQiOiIxIiwic2lnIjoiOWNlODg4YmMzMzNhZTYzYTc0NTJiOWM4NjVhNGMzOTEyNjllMGQ5MTU2YzU1ZWRkYWVkYzNmNGVkNTMyNDYyYSIsInYiOiIwIiwiY3MiOm51bGwsImNkbiI6bnVsbCwiZm4iOm51bGwsImNkIjpudWxsLCJjcCI6bnVsbCwibWEiOm51bGx9';
-const NAV_LOGO_URL = 'https://chatgpt.com/backend-api/estuary/content?id=file_00000000284881f59e0145e45b960bf8&ts=495883&p=fs&cid=1&sig=0e259d2963519c6147329d34157d809dc71fb5196d0e7b8812fdd87c544e571d&v=0';
+import logo from './assets/logo.png';
 
 // ==========================================
-// --- BACKGROUND LOOKUP TABLES (Edit 12) --- 
+// --- BACKGROUND LOOKUP TABLES ---
 // ==========================================
 
 export const LOOKUP_1 = {
@@ -143,7 +140,7 @@ export const LOOKUP_3 = {
   }
 };
 
-// --- Types & Interfaces ---
+// --- Habit Types & Definitions ---
 export type HabitKey =
   | 'sleep'
   | 'physicalActivity'
@@ -154,7 +151,16 @@ export type HabitKey =
   | 'sugaryDrinks'
   | 'mood';
 
-export interface DailyEntry {
+export interface HabitConfig {
+  key: HabitKey;
+  label: string;
+  icon: string;
+  selections: number[];
+  selectionLabels?: Record<number, string>;
+  goal: string;
+}
+
+interface DailyEntry {
   date: string; // YYYY-MM-DD
   sleep?: number;
   physicalActivity?: number;
@@ -166,21 +172,12 @@ export interface DailyEntry {
   mood?: number;
 }
 
-export interface UserData {
+interface UserData {
   username: string;
   role: 'Teacher' | 'Student';
   grade?: 'K - 5th' | '6th - 8th' | '9th - 12th' | '';
   classroomCode: string;
   entries: Record<string, DailyEntry>;
-}
-
-interface HabitConfig {
-  key: HabitKey;
-  label: string;
-  icon: string | React.ReactNode;
-  options: { label: string; value: number }[];
-  goal: string;
-  getColor: (val: number) => 'red' | 'yellow' | 'green';
 }
 
 export default function App() {
@@ -207,8 +204,8 @@ export default function App() {
   const [codeCustomError, setCodeCustomError] = useState('');
   const [generalRegError, setGeneralRegError] = useState(false);
 
-  // Log Data Inputs (Default states for 8 habits)
-  const [logData, setLogData] = useState<Record<HabitKey, number>>({
+  // Log Data Inputs State
+  const [logFormValues, setLogFormValues] = useState<Record<HabitKey, number>>({
     sleep: 0,
     physicalActivity: 0,
     water: 0,
@@ -216,7 +213,7 @@ export default function App() {
     wholeFoods: 0,
     upf: 0,
     sugaryDrinks: 0,
-    mood: 1
+    mood: 1,
   });
   const [logSuccessMsg, setLogSuccessMsg] = useState('');
 
@@ -274,7 +271,7 @@ export default function App() {
     return `${month}/${day}/${year}`;
   };
 
-  // Helper: Get Grade for Current User (Edit 15 requirement) 
+  // Helper: Get Grade for Current User (Edit 15 requirement)
   const getCurrentUserGrade = (): string => {
     if (!currentUser || !usersDb[currentUser]) return 'N/A';
     const user = usersDb[currentUser];
@@ -289,135 +286,106 @@ export default function App() {
     return teacher?.grade || user.grade || 'N/A';
   };
 
-  // Helper: Get Habit Configuration based on Grade (Edit 15 specifications) 
-  const getHabitConfigs = (gradeStr: string): HabitConfig[] => {
-    const isK5 = gradeStr === 'K - 5th';
-    const is68 = gradeStr === '6th - 8th';
+  // --- EDIT 15: Grade-adaptive Habit Configurations ---
+  const getHabitsConfig = (grade: string): HabitConfig[] => {
+    if (grade === 'K - 5th') {
+      return [
+        { key: 'sleep', label: 'Sleep', icon: '💤', selections: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], selectionLabels: { 12: '12+' }, goal: '9 - 12 hours / night' },
+        { key: 'physicalActivity', label: 'Physical Activity', icon: '🏃', selections: [0, 15, 30, 45, 60], selectionLabels: { 60: '60+' }, goal: '60+ minutes / day' },
+        { key: 'water', label: 'Water', icon: '💧', selections: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], selectionLabels: { 9: '9+' }, goal: '6 - 9 cups / day' },
+        { key: 'fruitsVeg', label: 'Fruits & Vegetables', icon: '🍎', selections: [0, 1, 2, 3, 4, 5], selectionLabels: { 5: '5+' }, goal: '>= 5 servings / day' },
+        { key: 'wholeFoods', label: 'Whole Foods', icon: '🥗', selections: [0, 10, 20, 30, 40, 50, 60, 70, 80], selectionLabels: { 80: '80%+' }, goal: '>= 80% / day' },
+        { key: 'upf', label: 'Ultra-Processed Foods', icon: '🍔', selections: [0, 10, 20, 30, 40], selectionLabels: { 40: '40%+' }, goal: '<= 20% / day' },
+        { key: 'sugaryDrinks', label: 'Sugary Drinks', icon: '🥤', selections: [0, 1], selectionLabels: { 1: '1+' }, goal: '0 drinks / day' },
+        { key: 'mood', label: 'Mood', icon: '⭐', selections: [1, 2, 3], goal: '3 stars' },
+      ];
+    } else if (grade === '6th - 8th') {
+      return [
+        { key: 'sleep', label: 'Sleep', icon: '💤', selections: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], selectionLabels: { 10: '10+' }, goal: '8 - 10 hours / night' },
+        { key: 'physicalActivity', label: 'Physical Activity', icon: '🏃', selections: [0, 15, 30, 45, 60], selectionLabels: { 60: '60+' }, goal: '60+ minutes / day' },
+        { key: 'water', label: 'Water', icon: '💧', selections: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], selectionLabels: { 11: '11+' }, goal: '8 - 11 cups / day' },
+        { key: 'fruitsVeg', label: 'Fruits & Vegetables', icon: '🍎', selections: [0, 1, 2, 3, 4, 5], selectionLabels: { 5: '5+' }, goal: '>= 5 servings / day' },
+        { key: 'wholeFoods', label: 'Whole Foods', icon: '🥗', selections: [0, 10, 20, 30, 40, 50, 60, 70, 80], selectionLabels: { 80: '80%+' }, goal: '>= 80% / day' },
+        { key: 'upf', label: 'Ultra-Processed Foods', icon: '🍔', selections: [0, 10, 20, 30, 40], selectionLabels: { 40: '40%+' }, goal: '<= 20% / day' },
+        { key: 'sugaryDrinks', label: 'Sugary Drinks', icon: '🥤', selections: [0, 1, 2], selectionLabels: { 2: '2+' }, goal: '0 - 1 drinks / day' },
+        { key: 'mood', label: 'Mood', icon: '⭐', selections: [1, 2, 3], goal: '3 stars' },
+      ];
+    } else {
+      // 9th - 12th OR unknown OR N/A
+      return [
+        { key: 'sleep', label: 'Sleep', icon: '💤', selections: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], selectionLabels: { 10: '10+' }, goal: '8 - 10 hours / night' },
+        { key: 'physicalActivity', label: 'Physical Activity', icon: '🏃', selections: [0, 15, 30, 45, 60], selectionLabels: { 60: '60+' }, goal: '60+ minutes / day' },
+        { key: 'water', label: 'Water', icon: '💧', selections: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13], selectionLabels: { 13: '13+' }, goal: '9 - 13 cups / day' },
+        { key: 'fruitsVeg', label: 'Fruits & Vegetables', icon: '🍎', selections: [0, 1, 2, 3, 4, 5], selectionLabels: { 5: '5+' }, goal: '>= 5 servings / day' },
+        { key: 'wholeFoods', label: 'Whole Foods', icon: '🥗', selections: [0, 10, 20, 30, 40, 50, 60, 70, 80], selectionLabels: { 80: '80%+' }, goal: '>= 80% / day' },
+        { key: 'upf', label: 'Ultra-Processed Foods', icon: '🍔', selections: [0, 10, 20, 30, 40], selectionLabels: { 40: '40%+' }, goal: '<= 20% / day' },
+        { key: 'sugaryDrinks', label: 'Sugary Drinks', icon: '🥤', selections: [0, 1, 2], selectionLabels: { 2: '2+' }, goal: '0 - 1 drinks / day' },
+        { key: 'mood', label: 'Mood', icon: '⭐', selections: [1, 2, 3], goal: '3 stars' },
+      ];
+    }
+  };
 
-    return [
-      {
-        key: 'sleep',
-        label: 'Sleep',
-        icon: '💤',
-        options: isK5
-          ? Array.from({ length: 13 }, (_, i) => ({ label: i === 12 ? '12+' : `${i}`, value: i }))
-          : Array.from({ length: 11 }, (_, i) => ({ label: i === 10 ? '10+' : `${i}`, value: i })),
-        goal: isK5 ? '9 - 12 hours / night' : '8 - 10 hours / night',
-        getColor: (val) => {
-          if (isK5) {
-            if (val >= 9) return 'green';
-            if (val === 8) return 'yellow';
-            return 'red';
-          } else {
-            if (val >= 8) return 'green';
-            if (val === 7) return 'yellow';
-            return 'red';
-          }
-        }
-      },
-      {
-        key: 'physicalActivity',
-        label: 'Physical Activity',
-        icon: '🏃',
-        options: [0, 15, 30, 45, 60].map((v) => ({ label: v === 60 ? '60+' : `${v}`, value: v })),
-        goal: '60+ minutes / day',
-        getColor: (val) => {
-          if (val >= 60) return 'green';
-          if (val === 45) return 'yellow';
-          return 'red';
-        }
-      },
-      {
-        key: 'water',
-        label: 'Water',
-        icon: '💧',
-        options: isK5
-          ? Array.from({ length: 10 }, (_, i) => ({ label: i === 9 ? '9+' : `${i}`, value: i }))
-          : is68
-          ? Array.from({ length: 12 }, (_, i) => ({ label: i === 11 ? '11+' : `${i}`, value: i }))
-          : Array.from({ length: 14 }, (_, i) => ({ label: i === 13 ? '13+' : `${i}`, value: i })),
-        goal: isK5 ? '6 - 9 cups / day' : is68 ? '8 - 11 cups / day' : '9 - 13 cups / day',
-        getColor: (val) => {
-          if (isK5) {
-            if (val >= 6) return 'green';
-            if (val === 5) return 'yellow';
-            return 'red';
-          } else if (is68) {
-            if (val >= 8) return 'green';
-            if (val === 7) return 'yellow';
-            return 'red';
-          } else {
-            if (val >= 9) return 'green';
-            if (val === 8) return 'yellow';
-            return 'red';
-          }
-        }
-      },
-      {
-        key: 'fruitsVeg',
-        label: 'Fruits & Vegetables',
-        icon: '🥗',
-        options: Array.from({ length: 6 }, (_, i) => ({ label: i === 5 ? '5+' : `${i}`, value: i })),
-        goal: '>= 5 servings / day',
-        getColor: (val) => {
-          if (val >= 5) return 'green';
-          if (val === 4) return 'yellow';
-          return 'red';
-        }
-      },
-      {
-        key: 'wholeFoods',
-        label: 'Whole Foods',
-        icon: '🍎',
-        options: [0, 10, 20, 30, 40, 50, 60, 70, 80].map((v) => ({ label: v === 80 ? '80+' : `${v}`, value: v })),
-        goal: '>= 80% / day',
-        getColor: (val) => {
-          if (val >= 80) return 'green';
-          if (val === 70) return 'yellow';
-          return 'red';
-        }
-      },
-      {
-        key: 'upf',
-        label: 'Ultra-Processed Foods',
-        icon: '🍔',
-        options: [0, 10, 20, 30, 40].map((v) => ({ label: v === 40 ? '40+' : `${v}`, value: v })),
-        goal: '<= 20% / day',
-        getColor: (val) => {
-          if (val <= 20) return 'green';
-          if (val === 30) return 'yellow';
-          return 'red';
-        }
-      },
-      {
-        key: 'sugaryDrinks',
-        label: 'Sugary Drinks',
-        icon: '🥤',
-        options: isK5
-          ? [{ label: '0', value: 0 }, { label: '1+', value: 1 }]
-          : [{ label: '0', value: 0 }, { label: '1', value: 1 }, { label: '2+', value: 2 }],
-        goal: isK5 ? '0 drinks / day' : '0 - 1 drinks / day',
-        getColor: (val) => {
-          if (isK5) {
-            return val === 0 ? 'green' : 'red';
-          } else {
-            return val <= 1 ? 'green' : 'red';
-          }
-        }
-      },
-      {
-        key: 'mood',
-        label: 'Mood',
-        icon: <span style={{ color: '#D4AC0D' }}>⭐</span>,
-        options: [{ label: '1', value: 1 }, { label: '2', value: 2 }, { label: '3', value: 3 }],
-        goal: '3 stars',
-        getColor: (val) => {
-          if (val >= 3) return 'green';
-          if (val === 2) return 'yellow';
-          return 'red';
-        }
+  // --- EDIT 15: Color Coding Helper ---
+  const getHabitColor = (key: HabitKey, val: number, grade: string): 'red' | 'yellow' | 'green' => {
+    if (grade === 'K - 5th') {
+      switch (key) {
+        case 'sleep':
+          return val >= 9 ? 'green' : val === 8 ? 'yellow' : 'red';
+        case 'physicalActivity':
+          return val >= 60 ? 'green' : val === 45 ? 'yellow' : 'red';
+        case 'water':
+          return val >= 6 ? 'green' : val === 5 ? 'yellow' : 'red';
+        case 'fruitsVeg':
+          return val >= 5 ? 'green' : val === 4 ? 'yellow' : 'red';
+        case 'wholeFoods':
+          return val >= 80 ? 'green' : val === 70 ? 'yellow' : 'red';
+        case 'upf':
+          return val <= 20 ? 'green' : val === 30 ? 'yellow' : 'red';
+        case 'sugaryDrinks':
+          return val === 0 ? 'green' : 'red';
+        case 'mood':
+          return val >= 3 ? 'green' : val === 2 ? 'yellow' : 'red';
       }
-    ];
+    } else if (grade === '6th - 8th') {
+      switch (key) {
+        case 'sleep':
+          return val >= 8 ? 'green' : val === 7 ? 'yellow' : 'red';
+        case 'physicalActivity':
+          return val >= 60 ? 'green' : val === 45 ? 'yellow' : 'red';
+        case 'water':
+          return val >= 8 ? 'green' : val === 7 ? 'yellow' : 'red';
+        case 'fruitsVeg':
+          return val >= 5 ? 'green' : val === 4 ? 'yellow' : 'red';
+        case 'wholeFoods':
+          return val >= 80 ? 'green' : val === 70 ? 'yellow' : 'red';
+        case 'upf':
+          return val <= 20 ? 'green' : val === 30 ? 'yellow' : 'red';
+        case 'sugaryDrinks':
+          return val <= 1 ? 'green' : 'red';
+        case 'mood':
+          return val >= 3 ? 'green' : val === 2 ? 'yellow' : 'red';
+      }
+    } else {
+      // 9th - 12th / unknown / N/A
+      switch (key) {
+        case 'sleep':
+          return val >= 8 ? 'green' : val === 7 ? 'yellow' : 'red';
+        case 'physicalActivity':
+          return val >= 60 ? 'green' : val === 45 ? 'yellow' : 'red';
+        case 'water':
+          return val >= 9 ? 'green' : val === 8 ? 'yellow' : 'red';
+        case 'fruitsVeg':
+          return val >= 5 ? 'green' : val === 4 ? 'yellow' : 'red';
+        case 'wholeFoods':
+          return val >= 80 ? 'green' : val === 70 ? 'yellow' : 'red';
+        case 'upf':
+          return val <= 20 ? 'green' : val === 30 ? 'yellow' : 'red';
+        case 'sugaryDrinks':
+          return val <= 1 ? 'green' : 'red';
+        case 'mood':
+          return val >= 3 ? 'green' : val === 2 ? 'yellow' : 'red';
+      }
+    }
   };
 
   // --- Handlers ---
@@ -527,10 +495,9 @@ export default function App() {
     const todayISO = getTodayESTISO();
     const user = usersDb[currentUser];
 
-    const newEntries = {
-      ...(user.entries || {}),
-      [todayISO]: { date: todayISO, ...logData }
-    };
+    const todayEntry: DailyEntry = { date: todayISO, ...logFormValues };
+
+    const newEntries = { ...(user.entries || {}), [todayISO]: todayEntry };
 
     const sortedKeys = Object.keys(newEntries).sort();
     if (sortedKeys.length > 28) {
@@ -554,14 +521,14 @@ export default function App() {
     return Object.values(entriesObj).sort((a, b) => a.date.localeCompare(b.date));
   };
 
-  const getWeeklyAverage = (key: HabitKey) => {
+  const getWeeklyAverage = (key: HabitKey): number => {
     const entries = getUserEntries();
     if (entries.length === 0) return 0;
     const last7 = entries.slice(-7);
-    const valid = last7.map((e) => e[key]).filter((v): v is number => v !== undefined);
-    if (valid.length === 0) return 0;
-    const sum = valid.reduce((acc, curr) => acc + curr, 0);
-    return Math.round((sum / valid.length) * 10) / 10;
+    const validValues = last7.map((e) => e[key]).filter((v): v is number => v !== undefined);
+    if (validValues.length === 0) return 0;
+    const sum = validValues.reduce((acc, curr) => acc + curr, 0);
+    return Math.round((sum / validValues.length) * 10) / 10;
   };
 
   const get28DayGrid = () => {
@@ -584,9 +551,10 @@ export default function App() {
     return result;
   };
 
-  const renderStatusIcon = (color: 'red' | 'yellow' | 'green') => {
-    if (color === 'green') return <span style={{ color: 'green', fontWeight: 'bold' }}>✓</span>;
-    if (color === 'yellow') return <span style={{ color: '#D4AC0D', fontWeight: 'bold' }}>●</span>;
+  const renderStatusIcon = (key: HabitKey, avg: number, grade: string) => {
+    const status = getHabitColor(key, avg, grade);
+    if (status === 'green') return <span style={{ color: 'green', fontWeight: 'bold' }}>✓</span>;
+    if (status === 'yellow') return <span style={{ color: '#D4AC0D', fontWeight: 'bold' }}>●</span>;
     return <span style={{ color: 'red', fontWeight: 'bold' }}>✕</span>;
   };
 
@@ -610,24 +578,25 @@ export default function App() {
       marginBottom: '20px'
     },
     mainLogoImage: {
-      width: '100%',
-      maxWidth: '420px',
+      maxWidth: '440px',
+      maxHeight: '280px',
       objectFit: 'contain',
-      margin: '0 auto 15px auto',
+      margin: '15px auto',
       display: 'block'
     },
     navLogoImage: {
-      width: '100%',
-      maxWidth: '200px', // Matches width of navigation buttons per Edit 14
+      width: '100px',
+      maxWidth: '100px',
+      maxHeight: '128px',
       objectFit: 'contain',
       margin: '0 auto 20px auto',
       display: 'block'
     },
     headerLogoImage: {
-      width: '100%',
-      maxWidth: '420px', // Same width as login/register per Edit 14
+      maxWidth: '440px',
+      maxHeight: '270px',
       objectFit: 'contain',
-      margin: '0 0 10px 0',
+      margin: '0 0 5px 0',
       display: 'block'
     },
     authContainer: {
@@ -763,8 +732,11 @@ export default function App() {
     return (
       <div style={styles.appContainer}>
         <div style={{ padding: '40px 20px' }}>
+          <div style={styles.centerHeader}>
+            <img src={logo} alt="HealthyHabitsED Logo" style={styles.mainLogoImage} />
+          </div>
+
           <div style={styles.authContainer}>
-            <img src={MAIN_LOGO_URL} alt="HealthyHabitsED Logo" style={styles.mainLogoImage} />
             <h2 style={{ color: charBlack, marginBottom: '5px', fontFamily: manropeFont }}>Login</h2>
 
             <form onSubmit={handleLogin}>
@@ -810,8 +782,11 @@ export default function App() {
     return (
       <div style={styles.appContainer}>
         <div style={{ padding: '40px 20px' }}>
+          <div style={styles.centerHeader}>
+            <img src={logo} alt="HealthyHabitsED Logo" style={styles.mainLogoImage} />
+          </div>
+
           <div style={styles.authContainer}>
-            <img src={MAIN_LOGO_URL} alt="HealthyHabitsED Logo" style={styles.mainLogoImage} />
             <h2 style={{ color: charBlack, marginBottom: '5px', fontFamily: manropeFont }}>Register</h2>
 
             <form onSubmit={handleRegister}>
@@ -958,13 +933,13 @@ export default function App() {
 
   // --- DASHBOARD WRAPPER (Home, Log, View) ---
   const currentUserGrade = getCurrentUserGrade();
-  const habitConfigs = getHabitConfigs(currentUserGrade);
+  const habitsConfig = getHabitsConfig(currentUserGrade);
 
   return (
     <div style={styles.appContainer}>
       <div style={styles.dashboardLayout}>
         <div style={styles.sidebar}>
-          <img src={NAV_LOGO_URL} alt="HealthyHabitsED Logo" style={styles.navLogoImage} />
+          <img src={logo} alt="HealthyHabitsED Logo" style={styles.navLogoImage} />
 
           <button
             style={{
@@ -1010,7 +985,7 @@ export default function App() {
         <div style={styles.mainContent}>
           {/* Top header image and info */}
           <div style={{ textAlign: 'left', marginBottom: '25px' }}>
-            <img src={MAIN_LOGO_URL} alt="HealthyHabitsED Logo" style={styles.headerLogoImage} />
+            <img src={logo} alt="HealthyHabitsED Logo" style={styles.headerLogoImage} />
 
             <div style={{ color: charBlack, fontFamily: manropeFont, fontSize: '16px' }}>
               My Grade: {currentUserGrade}
@@ -1020,7 +995,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* Home / Weekly Scorecard */}
+          {/* Home / Weekly Scorecard (EDIT 15 Requirement) */}
           {currentPage === 'home' && (
             <div style={{ textAlign: 'left', maxWidth: '700px' }}>
               <h2 style={{ color: steelBlue, fontFamily: manropeFont }}>
@@ -1036,20 +1011,16 @@ export default function App() {
                   </tr>
                 </thead>
                 <tbody>
-                  {habitConfigs.map((cfg) => {
-                    const avg = getWeeklyAverage(cfg.key);
-                    const color = cfg.getColor(avg);
-                    const fontColor = color === 'yellow' ? '#D4AC0D' : color;
-
+                  {habitsConfig.map((h) => {
+                    const avg = getWeeklyAverage(h.key);
                     return (
-                      <tr key={cfg.key}>
+                      <tr key={h.key}>
                         <td style={styles.logTableCell}>
-                          <span style={{ marginRight: '8px' }}>{cfg.icon}</span>
-                          {cfg.label}
+                          {h.icon} {h.label}
                         </td>
-                        <td style={styles.logTableCell}>{cfg.goal}</td>
-                        <td style={{ ...styles.logTableCell, color: fontColor, fontWeight: 'bold' }}>
-                          {avg} <span style={{ marginLeft: '10px' }}>{renderStatusIcon(color)}</span>
+                        <td style={styles.logTableCell}>{h.goal}</td>
+                        <td style={styles.logTableCell}>
+                          {avg} <span style={{ marginLeft: '10px' }}>{renderStatusIcon(h.key, avg, currentUserGrade)}</span>
                         </td>
                       </tr>
                     );
@@ -1059,7 +1030,7 @@ export default function App() {
             </div>
           )}
 
-          {/* Log My Daily Data Page */}
+          {/* Log My Daily Data Page (EDIT 15 Requirement) */}
           {currentPage === 'log' && (
             <div style={{ textAlign: 'left', maxWidth: '700px' }}>
               <h2 style={{ color: steelBlue, fontFamily: manropeFont }}>Log My Daily Data</h2>
@@ -1074,28 +1045,32 @@ export default function App() {
                     </tr>
                   </thead>
                   <tbody>
-                    {habitConfigs.map((cfg) => (
-                      <tr key={cfg.key}>
+                    {habitsConfig.map((h) => (
+                      <tr key={h.key}>
                         <td style={styles.logTableCell}>
-                          <span style={{ marginRight: '8px' }}>{cfg.icon}</span>
-                          {cfg.label}
+                          {h.icon} {h.label}
                         </td>
                         <td style={styles.logTableCell}>
                           <select
-                            value={logData[cfg.key]}
+                            value={logFormValues[h.key]}
                             onChange={(e) =>
-                              setLogData({ ...logData, [cfg.key]: Number(e.target.value) })
+                              setLogFormValues({
+                                ...logFormValues,
+                                [h.key]: Number(e.target.value)
+                              })
                             }
-                            style={{ ...styles.inputBox, width: '120px' }}
+                            style={{ ...styles.inputBox, width: '130px', margin: 0 }}
                           >
-                            {cfg.options.map((opt) => (
-                              <option key={opt.value} value={opt.value}>
-                                {opt.label}
+                            {h.selections.map((val) => (
+                              <option key={val} value={val}>
+                                {h.selectionLabels && h.selectionLabels[val]
+                                  ? h.selectionLabels[val]
+                                  : val}
                               </option>
                             ))}
                           </select>
                         </td>
-                        <td style={styles.logTableCell}>{cfg.goal}</td>
+                        <td style={styles.logTableCell}>{h.goal}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1107,36 +1082,35 @@ export default function App() {
               </form>
 
               {logSuccessMsg && (
-                <div style={{ color: 'green', marginTop: '10px', fontWeight: 'bold', fontFamily: manropeFont }}>
+                <div style={{ color: 'green', marginTop: '10px', fontWeight: 'bold' }}>
                   {logSuccessMsg}
                 </div>
               )}
             </div>
           )}
 
-          {/* View My Daily Data Page */}
+          {/* View My Daily Data Page (EDIT 15 Requirement) */}
           {currentPage === 'view' && (
             <div style={{ textAlign: 'left' }}>
               <h2 style={{ color: steelBlue, fontFamily: manropeFont }}>View My Daily Data (4-Week)</h2>
 
-              {/* Edit 13 & 15: Dropdown with Habit and Goal */}
               <div style={{ marginBottom: '20px', fontSize: '16px', fontFamily: manropeFont }}>
                 <span style={{ color: steelBlue, fontWeight: 'bold' }}>Habit: </span>
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value as HabitKey)}
-                  style={{ ...styles.inputBox, width: '220px', display: 'inline-block', margin: '0 15px 0 5px', color: charBlack }}
+                  style={{ ...styles.inputBox, width: '240px', display: 'inline-block', margin: '0 15px 0 5px', color: charBlack }}
                 >
-                  {habitConfigs.map((cfg) => (
-                    <option key={cfg.key} value={cfg.key} style={{ color: charBlack }}>
-                      {cfg.label}, {cfg.goal}
+                  {habitsConfig.map((h) => (
+                    <option key={h.key} value={h.key} style={{ color: charBlack }}>
+                      {h.label}, {h.goal}
                     </option>
                   ))}
                 </select>
 
                 <span style={{ color: steelBlue, fontWeight: 'bold' }}>Goal: </span>
                 <span style={{ color: charBlack }}>
-                  {habitConfigs.find((c) => c.key === selectedCategory)?.goal}
+                  {habitsConfig.find((h) => h.key === selectedCategory)?.goal}
                 </span>
               </div>
 
@@ -1144,12 +1118,13 @@ export default function App() {
               <div style={styles.gridTable}>
                 {get28DayGrid().map(({ dateStr, entry }) => {
                   const val = entry ? entry[selectedCategory] : undefined;
-                  const currentCfg = habitConfigs.find((c) => c.key === selectedCategory);
-                  
                   let fontColor = charBlack;
-                  if (val !== undefined && currentCfg) {
-                    const color = currentCfg.getColor(val);
-                    fontColor = color === 'yellow' ? '#D4AC0D' : color;
+
+                  if (val !== undefined) {
+                    const status = getHabitColor(selectedCategory, val, currentUserGrade);
+                    if (status === 'green') fontColor = 'green';
+                    else if (status === 'yellow') fontColor = '#D4AC0D';
+                    else fontColor = 'red';
                   }
 
                   return (
