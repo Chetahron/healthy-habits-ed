@@ -541,27 +541,50 @@ export default function App() {
       minHeight: '100vh'
     },
     sidebar: {
-      width: '220px',
+      width: '260px',
       backgroundColor: steelBlue,
       color: '#FFFFFF',
-      padding: '20px 10px',
+      padding: '20px 15px',
       display: 'flex',
       flexDirection: 'column',
-      alignItems: 'center'
+      alignItems: 'center',
+      gap: '12px',
+      boxSizing: 'border-box',
+    },
+    sidebarLogoBox: {
+      width: '100%',
+      maxWidth: '220px',
+      backgroundColor: '#ffffff',
+      borderRadius: '8px',
+      padding: '8px 12px',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: '10px',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+      boxSizing: 'border-box',
+    },
+    sidebarLogoImage: {
+      width: '100%',
+      maxHeight: '45px',
+      objectFit: 'contain',
+      display: 'block',
     },
     navButton: {
       width: '100%',
+      maxWidth: '220px',
       backgroundColor: cream,
       color: charBlack,
       border: '1px solid transparent',
-      padding: '10px',
-      margin: '8px 0',
+      padding: '12px 15px',
       cursor: 'pointer',
       fontFamily: manropeFont,
       fontSize: '15px',
       fontWeight: 600,
       textAlign: 'center',
-      borderRadius: '4px',
+      borderRadius: '8px',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+      boxSizing: 'border-box',
       transition: 'all 0.2s ease-in-out'
     },
     activeNavButton: {
@@ -831,17 +854,12 @@ export default function App() {
     <div style={styles.appContainer}>
       <div style={styles.dashboardLayout}>
         <div style={styles.sidebar}>
-          <div style={{ width: '100%', display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+          {/* Top-Left Logo Box: Matched to the size and alignment of the panels below */}
+          <div style={styles.sidebarLogoBox}>
             <img
               src={logo}
               alt="HealthyHabitsED Logo"
-              style={{
-                maxWidth: '120px',
-                width: '100%',
-                height: 'auto',
-                display: 'block',
-                objectFit: 'contain'
-              }}
+              style={styles.sidebarLogoImage}
             />
           </div>
 
@@ -887,7 +905,12 @@ export default function App() {
           </button>
 
           <button
-            style={{ ...styles.navButton, marginTop: 'auto', opacity: 0.9 }}
+            style={{
+              ...styles.navButton,
+              marginTop: 'auto',
+              backgroundColor: '#d9534f',
+              color: '#ffffff'
+            }}
             onClick={() => {
               setCurrentUser(null);
               setCurrentPage('login');
@@ -903,13 +926,13 @@ export default function App() {
             <img src={logo} alt="HealthyHabitsED Logo" style={styles.headerLogoImage} />
 
             {/* EDIT 16 Requirement: Add My Classroom above My Grade */}
-            <div style={{ color: charBlack, fontFamily: manropeFont, fontSize: '16px' }}>
+            <div style={{ color: charBlack, fontFamily: manropeFont, fontSize: '16px', lineHeight: '1.5' }}>
               My Classroom: {currentUserClassroom}
             </div>
-            <div style={{ color: charBlack, fontFamily: manropeFont, fontSize: '16px' }}>
+            <div style={{ color: charBlack, fontFamily: manropeFont, fontSize: '16px', lineHeight: '1.5' }}>
               My Grade: {currentUserGrade}
             </div>
-            <div style={{ color: charBlack, fontFamily: manropeFont, fontSize: '16px' }}>
+            <div style={{ color: charBlack, fontFamily: manropeFont, fontSize: '16px', lineHeight: '1.5' }}>
               Today's Date: {getTodayESTFormatted()}
             </div>
           </div>
@@ -917,7 +940,7 @@ export default function App() {
           {/* EDIT 16 Requirement: My Classroom Scorecard Page */}
           {currentPage === 'classroom' && (
             <div style={{ textAlign: 'left', maxWidth: '700px' }}>
-              <h2 style={{ color: steelBlue, fontFamily: manropeFont }}>
+              <h2 style={{ color: steelBlue, fontFamily: manropeFont, fontSize: '24px', fontWeight: 'bold' }}>
                 My Classroom’s Healthy Habits Scorecard (Weekly Average)
               </h2>
 
@@ -952,7 +975,7 @@ export default function App() {
           {/* Home / Weekly Scorecard */}
           {currentPage === 'home' && (
             <div style={{ textAlign: 'left', maxWidth: '700px' }}>
-              <h2 style={{ color: steelBlue, fontFamily: manropeFont }}>
+              <h2 style={{ color: steelBlue, fontFamily: manropeFont, fontSize: '24px', fontWeight: 'bold' }}>
                 My Healthy Habits Scorecard (Weekly Average)
               </h2>
 
@@ -987,7 +1010,7 @@ export default function App() {
           {/* Log My Daily Data Page */}
           {currentPage === 'log' && (
             <div style={{ textAlign: 'left', maxWidth: '700px' }}>
-              <h2 style={{ color: steelBlue, fontFamily: manropeFont }}>Log My Daily Data</h2>
+              <h2 style={{ color: steelBlue, fontFamily: manropeFont, fontSize: '24px', fontWeight: 'bold' }}>Log My Daily Data</h2>
 
               <form onSubmit={handleLogSubmit}>
                 <table style={styles.logTable}>
@@ -1046,7 +1069,7 @@ export default function App() {
           {/* View My Daily Data Page */}
           {currentPage === 'view' && (
             <div style={{ textAlign: 'left' }}>
-              <h2 style={{ color: steelBlue, fontFamily: manropeFont }}>View My Daily Data (4-Week)</h2>
+              <h2 style={{ color: steelBlue, fontFamily: manropeFont, fontSize: '24px', fontWeight: 'bold' }}>View My Daily Data (4-Week)</h2>
 
               <div style={{ marginBottom: '20px', fontSize: '16px', fontFamily: manropeFont }}>
                 <span style={{ color: steelBlue, fontWeight: 'bold' }}>Habit: </span>
@@ -1055,7 +1078,6 @@ export default function App() {
                   onChange={(e) => setSelectedCategory(e.target.value as HabitKey)}
                   style={{ ...styles.inputBox, width: '240px', display: 'inline-block', margin: '0 15px 0 5px', color: charBlack }}
                 >
-                  {/* EDIT 16 Requirement: Only include the text before the comma */}
                   {habitsConfig.map((h) => (
                     <option key={h.key} value={h.key} style={{ color: charBlack }}>
                       {h.label}
