@@ -85,9 +85,9 @@ export default function App() {
   // Survey Form State
   const [surveyTeacherChallenge, setSurveyTeacherChallenge] = useState('');
   const [surveyStudentHardestHabit, setSurveyStudentHardestHabit] = useState('');
-  const [surveyStudentDifficultyReason, setSurveyStudentDifficultyReason] = useState('');
-  const [surveyStudentResourceInterest, setSurveyStudentResourceInterest] = useState('');
-  const [surveyStudentImpact, setSurveyStudentImpact] = useState('');
+  const [surveyStudentDifficultyReason, setSurveyStudentDifficultyReason] = useState<string[]>([]);
+  const [surveyStudentResourceInterest, setSurveyStudentResourceInterest] = useState<string[]>([]);
+  const [surveyStudentImpact, setSurveyStudentImpact] = useState<string[]>([]);
   const [surveyStudentMoreTips, setSurveyStudentMoreTips] = useState('');
   const [surveySuccessMsg, setSurveySuccessMsg] = useState('');
 
@@ -158,9 +158,9 @@ export default function App() {
   };
 
   // Helper: Get Role for Current User
-  const getCurrentUserRole = (): 'Teacher' | 'Student' => {
-    if (!currentUser || !usersDb[currentUser]) return 'Student';
-    return usersDb[currentUser].role || 'Student';
+  const getCurrentUserRole = (): 'Teacher' | 'Student' | 'N/A' => {
+    if (!currentUser || !usersDb[currentUser]) return 'N/A';
+    return usersDb[currentUser].role || 'N/A';
   };
 
   // Helper: Get Classroom Code for Current User
@@ -426,6 +426,14 @@ export default function App() {
     setTimeout(() => setSurveySuccessMsg(''), 4000);
   };
 
+  const toggleArraySelection = (arr: string[], setArr: React.Dispatch<React.SetStateAction<string[]>>, val: string) => {
+    if (arr.includes(val)) {
+      setArr(arr.filter((item) => item !== val));
+    } else {
+      setArr([...arr, val]);
+    }
+  };
+
   // --- Calculation Helpers ---
   const getUserEntries = (): DailyEntry[] => {
     if (!currentUser || !usersDb[currentUser]) return [];
@@ -596,9 +604,10 @@ export default function App() {
       gap: '10px',
       boxSizing: 'border-box',
     },
+    // EDIT 19 Requirement: Twice as wide as before (220px)
     sidebarLogoBox: {
       width: '100%',
-      maxWidth: '110px',
+      maxWidth: '220px',
       backgroundColor: 'transparent',
       padding: '6px',
       display: 'flex',
@@ -610,7 +619,7 @@ export default function App() {
     sidebarLogoImage: {
       width: '100%',
       height: 'auto',
-      maxHeight: '60px',
+      maxHeight: '80px',
       objectFit: 'contain',
       display: 'block',
     },
@@ -691,6 +700,20 @@ export default function App() {
       marginBottom: '6px',
       fontSize: '14px',
       fontFamily: manropeFont
+    },
+    // EDIT 19 Requirement: Reduced font sizes for content sections
+    smallContentHeader: {
+      fontSize: '15px',
+      fontWeight: 'bold',
+      margin: '6px 0 3px 0'
+    },
+    smallContentText: {
+      fontSize: '14px',
+      margin: '0 0 8px 0',
+      lineHeight: '1.5'
+    },
+    halfHeightSpace: {
+      height: '10px'
     }
   };
 
@@ -1003,10 +1026,13 @@ export default function App() {
         </div>
 
         <div style={styles.mainContent}>
-          {/* Top header image and info */}
+          {/* EDIT 19 Requirement: Add "My Status:" above "My Classroom:" */}
           <div style={{ textAlign: 'left', marginBottom: '25px' }}>
             <img src={logo} alt="HealthyHabitsED Logo" style={styles.headerLogoImage} />
 
+            <div style={{ color: charBlack, fontFamily: manropeFont, fontSize: '16px', lineHeight: '1.5' }}>
+              My Status: {currentUserRole}
+            </div>
             <div style={{ color: charBlack, fontFamily: manropeFont, fontSize: '16px', lineHeight: '1.5' }}>
               My Classroom: {currentUserClassroom}
             </div>
@@ -1200,144 +1226,142 @@ export default function App() {
             </div>
           )}
 
-          {/* Learning Center Page */}
+          {/* EDIT 19 Requirement: Learning Center Page Updates */}
           {currentPage === 'learning' && (
-            <div style={{ textAlign: 'left', maxWidth: '800px', lineHeight: '1.6' }}>
-              <h2 style={{ color: steelBlue, fontFamily: manropeFont, fontSize: '24px', fontWeight: 'bold', marginBottom: '20px' }}>
+            <div style={{ textAlign: 'left', maxWidth: '800px' }}>
+              <h2 style={{ color: steelBlue, fontFamily: manropeFont, fontSize: '24px', fontWeight: 'bold', marginBottom: '15px' }}>
                 Learning Center
               </h2>
 
-              <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '20px', marginBottom: '8px' }}>
-                What is Sleep?
+              <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '15px', marginBottom: '6px' }}>
+                Sleep
               </h3>
-              <p style={{ margin: '0 0 10px 0' }}>
+              <p style={styles.smallContentText}>
                 Sleep is when your brain and body recharge so you can learn, grow, and feel your best. Getting the right amount of sleep every night helps you succeed in school, sports, and everyday life.
               </p>
-              <h4 style={{ fontWeight: 'bold', margin: '8px 0 4px 0' }}>1. Your Brain Gets Stronger</h4>
-              <p style={{ margin: '0 0 8px 0' }}>While you sleep, your brain organizes what you learned during the day and stores it as memories. Good sleep helps you focus, solve problems, and remember what you study.</p>
-              <h4 style={{ fontWeight: 'bold', margin: '8px 0 4px 0' }}>2. Your Body Grows While You Sleep</h4>
-              <p style={{ margin: '0 0 8px 0' }}>Your body releases important growth hormones while you sleep. Sleep also helps your muscles recover, strengthens your immune system, and gives you energy for tomorrow.</p>
-              <h4 style={{ fontWeight: 'bold', margin: '8px 0 4px 0' }}>3. Better Sleep = Better Days</h4>
-              <p style={{ margin: '0 0 15px 0' }}>Students who get enough sleep are more likely to feel happier, pay attention in class, and make good decisions. A regular bedtime can make a big difference.</p>
+              <h4 style={styles.smallContentHeader}>1. Your Brain Gets Stronger</h4>
+              <p style={styles.smallContentText}>While you sleep, your brain organizes what you learned during the day and stores it as memories. Good sleep helps you focus, solve problems, and remember what you study.</p>
+              <h4 style={styles.smallContentHeader}>2. Your Body Grows While You Sleep</h4>
+              <p style={styles.smallContentText}>Your body releases important growth hormones while you sleep. Sleep also helps your muscles recover, strengthens your immune system, and gives you energy for tomorrow.</p>
+              <h4 style={styles.smallContentHeader}>3. Better Sleep = Better Days</h4>
+              <p style={styles.smallContentText}>Students who get enough sleep are more likely to feel happier, pay attention in class, and make good decisions. A regular bedtime can make a big difference.</p>
 
-              <br />
+              <div style={styles.halfHeightSpace} />
 
-              <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '20px', marginBottom: '8px' }}>
-                What is Physical Activity?
+              <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '15px', marginBottom: '6px' }}>
+                Physical Activity
               </h3>
-              <p style={{ margin: '0 0 10px 0' }}>
+              <p style={styles.smallContentText}>
                 Physical activity is any movement that gets your body working, from playing outside to sports, dancing, biking, or walking. Aim for about 60 minutes of activity each day.
               </p>
-              <h4 style={{ fontWeight: 'bold', margin: '8px 0 4px 0' }}>1. Exercise Builds a Strong Body</h4>
-              <p style={{ margin: '0 0 8px 0' }}>Being active strengthens your heart, muscles, and bones while improving balance, coordination, and endurance.</p>
-              <h4 style={{ fontWeight: 'bold', margin: '8px 0 4px 0' }}>2. Moving Helps Your Brain</h4>
-              <p style={{ margin: '0 0 8px 0' }}>Exercise increases blood flow to your brain, helping you concentrate, learn new things, and think more clearly.</p>
-              <h4 style={{ fontWeight: 'bold', margin: '8px 0 4px 0' }}>3. Movement Boosts Your Mood</h4>
-              <p style={{ margin: '0 0 15px 0' }}>Physical activity releases chemicals in your brain that can help you feel happier, less stressed, and more confident.</p>
+              <h4 style={styles.smallContentHeader}>1. Exercise Builds a Strong Body</h4>
+              <p style={styles.smallContentText}>Being active strengthens your heart, muscles, and bones while improving balance, coordination, and endurance.</p>
+              <h4 style={styles.smallContentHeader}>2. Moving Helps Your Brain</h4>
+              <p style={styles.smallContentText}>Exercise increases blood flow to your brain, helping you concentrate, learn new things, and think more clearly.</p>
+              <h4 style={styles.smallContentHeader}>3. Movement Boosts Your Mood</h4>
+              <p style={styles.smallContentText}>Physical activity releases chemicals in your brain that can help you feel happier, less stressed, and more confident.</p>
 
-              <br />
+              <div style={styles.halfHeightSpace} />
 
-              <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '20px', marginBottom: '8px' }}>
-                What is Water?
+              <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '15px', marginBottom: '6px' }}>
+                Water
               </h3>
-              <p style={{ margin: '0 0 10px 0' }}>
+              <p style={styles.smallContentText}>
                 Water is the best drink for your body because every organ depends on it to work properly. Staying hydrated helps you feel energized and ready to learn.
               </p>
-              <h4 style={{ fontWeight: 'bold', margin: '8px 0 4px 0' }}>1. Water Powers Your Brain</h4>
-              <p style={{ margin: '0 0 8px 0' }}>Even mild dehydration can make it harder to concentrate, remember information, and stay alert during school.</p>
-              <h4 style={{ fontWeight: 'bold', margin: '8px 0 4px 0' }}>2. Water Keeps Your Body Running</h4>
-              <p style={{ margin: '0 0 8px 0' }}>Water helps regulate your body temperature, moves nutrients where they're needed, and supports healthy digestion.</p>
-              <h4 style={{ fontWeight: 'bold', margin: '8px 0 4px 0' }}>3. Water Beats Sugary Drinks</h4>
-              <p style={{ margin: '0 0 15px 0' }}>Choosing water instead of sugary drinks helps protect your teeth and gives your body what it needs without added sugar.</p>
+              <h4 style={styles.smallContentHeader}>1. Water Powers Your Brain</h4>
+              <p style={styles.smallContentText}>Even mild dehydration can make it harder to concentrate, remember information, and stay alert during school.</p>
+              <h4 style={styles.smallContentHeader}>2. Water Keeps Your Body Running</h4>
+              <p style={styles.smallContentText}>Water helps regulate your body temperature, moves nutrients where they're needed, and supports healthy digestion.</p>
+              <h4 style={styles.smallContentHeader}>3. Water Beats Sugary Drinks</h4>
+              <p style={styles.smallContentText}>Choosing water instead of sugary drinks helps protect your teeth and gives your body what it needs without added sugar.</p>
 
-              <br />
+              <div style={styles.halfHeightSpace} />
 
-              <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '20px', marginBottom: '8px' }}>
-                What are Fruits & Vegetables?
+              <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '15px', marginBottom: '6px' }}>
+                Fruits & Vegetables
               </h3>
-              <p style={{ margin: '0 0 10px 0' }}>
+              <p style={styles.smallContentText}>
                 Fruits and vegetables are packed with vitamins, minerals, fiber, and antioxidants that help your body stay healthy. Eating a colorful variety gives your body many important nutrients.
               </p>
-              <h4 style={{ fontWeight: 'bold', margin: '8px 0 4px 0' }}>1. Colors Mean Different Nutrients</h4>
-              <p style={{ margin: '0 0 8px 0' }}>Red, orange, yellow, green, blue, and purple fruits and vegetables all contain different nutrients that help your body in different ways.</p>
-              <h4 style={{ fontWeight: 'bold', margin: '8px 0 4px 0' }}>2. Fuel for Your Body</h4>
-              <p style={{ margin: '0 0 8px 0' }}>Fruits and vegetables help support healthy digestion, strengthen your immune system, and provide steady energy throughout the day.</p>
-              <h4 style={{ fontWeight: 'bold', margin: '8px 0 4px 0' }}>3. Healthy Habits Start Young</h4>
-              <p style={{ margin: '0 0 15px 0' }}>Eating plenty of fruits and vegetables while you're growing helps build lifelong healthy eating habits.</p>
+              <h4 style={styles.smallContentHeader}>1. Colors Mean Different Nutrients</h4>
+              <p style={styles.smallContentText}>Red, orange, yellow, green, blue, and purple fruits and vegetables all contain different nutrients that help your body in different ways.</p>
+              <h4 style={styles.smallContentHeader}>2. Fuel for Your Body</h4>
+              <p style={styles.smallContentText}>Fruits and vegetables help support healthy digestion, strengthen your immune system, and provide steady energy throughout the day.</p>
+              <h4 style={styles.smallContentHeader}>3. Healthy Habits Start Young</h4>
+              <p style={styles.smallContentText}>Eating plenty of fruits and vegetables while you're growing helps build lifelong healthy eating habits.</p>
 
-              <br />
+              <div style={styles.halfHeightSpace} />
 
-              <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '20px', marginBottom: '8px' }}>
-                What are Whole Foods?
+              <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '15px', marginBottom: '6px' }}>
+                Whole Foods
               </h3>
-              <p style={{ margin: '0 0 10px 0' }}>
+              <p style={styles.smallContentText}>
                 Whole foods are foods that are close to their natural form with little processing, like apples, oatmeal, eggs, beans, yogurt, nuts, and fresh vegetables. They provide the nutrients your body needs to grow and stay healthy.
               </p>
-              <h4 style={{ fontWeight: 'bold', margin: '8px 0 4px 0' }}>1. Better Fuel</h4>
-              <p style={{ margin: '0 0 8px 0' }}>Whole foods usually contain more fiber, vitamins, and minerals than highly processed foods, helping your body work its best.</p>
-              <h4 style={{ fontWeight: 'bold', margin: '8px 0 4px 0' }}>2. Longer-Lasting Energy</h4>
-              <p style={{ margin: '0 0 8px 0' }}>Whole foods often help you stay full longer and provide steady energy for school, sports, and play.</p>
-              <h4 style={{ fontWeight: 'bold', margin: '8px 0 4px 0' }}>3. Small Choices Matter</h4>
-              <p style={{ margin: '0 0 15px 0' }}>You don't have to eat perfectly. Choosing whole foods more often is a great way to build healthy habits over time.</p>
+              <h4 style={styles.smallContentHeader}>1. Better Fuel</h4>
+              <p style={styles.smallContentText}>Whole foods usually contain more fiber, vitamins, and minerals than highly processed foods, helping your body work its best.</p>
+              <h4 style={styles.smallContentHeader}>2. Longer-Lasting Energy</h4>
+              <p style={styles.smallContentText}>Whole foods often help you stay full longer and provide steady energy for school, sports, and play.</p>
+              <h4 style={styles.smallContentHeader}>3. Small Choices Matter</h4>
+              <p style={styles.smallContentText}>You don't have to eat perfectly. Choosing whole foods more often is a great way to build healthy habits over time.</p>
 
-              <br />
+              <div style={styles.halfHeightSpace} />
 
-              <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '20px', marginBottom: '8px' }}>
-                What are Ultra-Processed Foods?
+              <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '15px', marginBottom: '6px' }}>
+                Ultra-Processed Foods
               </h3>
-              <p style={{ margin: '0 0 10px 0' }}>
+              <p style={styles.smallContentText}>
                 Ultra-processed foods are made with many added ingredients and often contain extra sugar, salt, unhealthy fats, or artificial flavors. Examples include many chips, candy, soda, and packaged desserts.
               </p>
-              <h4 style={{ fontWeight: 'bold', margin: '8px 0 4px 0' }}>1. Fine Sometimes, Not All the Time</h4>
-              <p style={{ margin: '0 0 8px 0' }}>Ultra-processed foods can be enjoyable occasionally, but eating too many may crowd out more nutritious foods your body needs.</p>
-              <h4 style={{ fontWeight: 'bold', margin: '8px 0 4px 0' }}>2. Less Nutrition</h4>
-              <p style={{ margin: '0 0 8px 0' }}>Many ultra-processed foods contain fewer vitamins, minerals, and fiber than whole foods.</p>
-              <h4 style={{ fontWeight: 'bold', margin: '8px 0 4px 0' }}>3. Think About Balance</h4>
-              <p style={{ margin: '0 0 15px 0' }}>You don't have to avoid these foods completely. Choosing whole foods most of the time helps your body and brain stay healthier.</p>
+              <h4 style={styles.smallContentHeader}>1. Fine Sometimes, Not All the Time</h4>
+              <p style={styles.smallContentText}>Ultra-processed foods can be enjoyable occasionally, but eating too many may crowd out more nutritious foods your body needs.</p>
+              <h4 style={styles.smallContentHeader}>2. Less Nutrition</h4>
+              <p style={styles.smallContentText}>Many ultra-processed foods contain fewer vitamins, minerals, and fiber than whole foods.</p>
+              <h4 style={styles.smallContentHeader}>3. Think About Balance</h4>
+              <p style={styles.smallContentText}>You don't have to avoid these foods completely. Choosing whole foods most of the time helps your body and brain stay healthier.</p>
 
-              <br />
+              <div style={styles.halfHeightSpace} />
 
-              <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '20px', marginBottom: '8px' }}>
-                What are Sugary Drinks?
+              <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '15px', marginBottom: '6px' }}>
+                Sugary Drinks
               </h3>
-              <p style={{ margin: '0 0 10px 0' }}>
+              <p style={styles.smallContentText}>
                 Sugary drinks include soda, many sports drinks, sweet teas, fruit drinks with added sugar, and energy drinks. They often contain lots of sugar but very few nutrients.
               </p>
-              <h4 style={{ fontWeight: 'bold', margin: '8px 0 4px 0' }}>1. Sugar Adds Up Fast</h4>
-              <p style={{ margin: '0 0 8px 0' }}>One sugary drink can contain many teaspoons of added sugar. Drinking them often can make it harder to meet healthy nutrition goals.</p>
-              <h4 style={{ fontWeight: 'bold', margin: '8px 0 4px 0' }}>2. Water Is the Best Choice</h4>
-              <p style={{ margin: '0 0 8px 0' }}>Water is the best way to stay hydrated before school, during sports, and throughout the day.</p>
-              <h4 style={{ fontWeight: 'bold', margin: '8px 0 4px 0' }}>3. Protect Your Smile</h4>
-              <p style={{ margin: '0 0 15px 0' }}>Drinking fewer sugary beverages can help reduce the risk of cavities and keep your teeth healthier.</p>
+              <h4 style={styles.smallContentHeader}>1. Sugar Adds Up Fast</h4>
+              <p style={styles.smallContentText}>One sugary drink can contain many teaspoons of added sugar. Drinking them often can make it harder to meet healthy nutrition goals.</p>
+              <h4 style={styles.smallContentHeader}>2. Water Is the Best Choice</h4>
+              <p style={styles.smallContentText}>Water is the best way to stay hydrated before school, during sports, and throughout the day.</p>
+              <h4 style={styles.smallContentHeader}>3. Protect Your Smile</h4>
+              <p style={styles.smallContentText}>Drinking fewer sugary beverages can help reduce the risk of cavities and keep your teeth healthier.</p>
 
-              <br />
+              <div style={styles.halfHeightSpace} />
 
-              <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '20px', marginBottom: '8px' }}>
-                What is Mood?
+              <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '15px', marginBottom: '6px' }}>
+                Mood
               </h3>
-              <p style={{ margin: '0 0 10px 0' }}>
+              <p style={styles.smallContentText}>
                 Your mood is how you feel emotionally throughout the day. Everyone has good days and bad days, and healthy habits can help support a more positive mood over time.
               </p>
-              <h4 style={{ fontWeight: 'bold', margin: '8px 0 4px 0' }}>1. Healthy Habits Work Together</h4>
-              <p style={{ margin: '0 0 8px 0' }}>Getting enough sleep, drinking water, eating nutritious foods, and staying active all work together to help you feel your best.</p>
-              <h4 style={{ fontWeight: 'bold', margin: '8px 0 4px 0' }}>2. Your Body and Brain Are Connected</h4>
-              <p style={{ margin: '0 0 8px 0' }}>When your body has the fuel, movement, and rest it needs, your brain often works better too, making it easier to learn, focus, and handle challenges.</p>
-              <h4 style={{ fontWeight: 'bold', margin: '8px 0 4px 0' }}>3. Small Habits Can Make a Big Difference</h4>
-              <p style={{ margin: '0 0 15px 0' }}>No single habit controls your mood, but practicing healthy habits consistently can help you feel more energetic, focused, and ready to take on each day. If you're feeling down or overwhelmed for a long time, it's important to talk with a trusted adult, parent, teacher, or school counselor.</p>
+              <h4 style={styles.smallContentHeader}>1. Healthy Habits Work Together</h4>
+              <p style={styles.smallContentText}>Getting enough sleep, drinking water, eating nutritious foods, and staying active all work together to help you feel your best.</p>
+              <h4 style={styles.smallContentHeader}>2. Your Body and Brain Are Connected</h4>
+              <p style={styles.smallContentText}>When your body has the fuel, movement, and rest it needs, your brain often works better too, making it easier to learn, focus, and handle challenges.</p>
+              <h4 style={styles.smallContentHeader}>3. Small Habits Can Make a Big Difference</h4>
+              <p style={styles.smallContentText}>No single habit controls your mood, but practicing healthy habits consistently can help you feel more energetic, focused, and ready to take on each day. If you're feeling down or overwhelmed for a long time, it's important to talk with a trusted adult, parent, teacher, or school counselor.</p>
             </div>
           )}
 
-          {/* Community Resources Page */}
+          {/* EDIT 19 Requirement: Community Resources Page Updates */}
           {currentPage === 'resources' && (
-            <div style={{ textAlign: 'left', maxWidth: '800px', lineHeight: '1.6' }}>
-              <h2 style={{ color: steelBlue, fontFamily: manropeFont, fontSize: '24px', fontWeight: 'bold', marginBottom: '20px' }}>
+            <div style={{ textAlign: 'left', maxWidth: '800px' }}>
+              <h2 style={{ color: steelBlue, fontFamily: manropeFont, fontSize: '24px', fontWeight: 'bold', marginBottom: '15px' }}>
                 Community Resources in Indianapolis, IN
               </h2>
 
-              <br />
-
-              <h3 style={{ fontWeight: 'bold', fontSize: '17px', margin: '10px 0 6px 0' }}>Free Groceries and Meals</h3>
-              <p style={{ margin: '0 0 8px 0' }}>
+              <h3 style={{ ...styles.smallContentHeader, color: charBlack, fontSize: '16px', marginTop: '5px' }}>Free Groceries and Meals</h3>
+              <p style={styles.smallContentText}>
                 Find services where you can search for free groceries and meals if you or your family need extra help. Food pantries, specifically, help make sure everyone has access to healthy food, no matter their financial situation.
               </p>
               <a href="https://www.communitycompass.app/home" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>
@@ -1347,10 +1371,10 @@ export default function App() {
                 Indianapolis Food Pantries
               </a>
 
-              <br />
+              <div style={styles.halfHeightSpace} />
 
-              <h3 style={{ fontWeight: 'bold', fontSize: '17px', margin: '10px 0 6px 0' }}>Free Student Meal Services</h3>
-              <p style={{ margin: '0 0 8px 0' }}>
+              <h3 style={{ ...styles.smallContentHeader, color: charBlack, fontSize: '16px' }}>Free Student Meal Services</h3>
+              <p style={styles.smallContentText}>
                 Find free student meal programs that provide nutritious breakfast, lunch, and snack options, helping you stay healthy, energized, and ready to learn during the school year and summer.
               </p>
               <a href="https://www.myips.org/student-family-references/foodservice" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>
@@ -1360,10 +1384,10 @@ export default function App() {
                 Indy Parks & Recreation
               </a>
 
-              <br />
+              <div style={styles.halfHeightSpace} />
 
-              <h3 style={{ fontWeight: 'bold', fontSize: '17px', margin: '10px 0 6px 0' }}>Youth Activities - Parks, Playgrounds, Walking Trails & Sports</h3>
-              <p style={{ margin: '0 0 8px 0' }}>
+              <h3 style={{ ...styles.smallContentHeader, color: charBlack, fontSize: '16px' }}>Youth Activities - Parks, Playgrounds, Walking Trails & Sports</h3>
+              <p style={styles.smallContentText}>
                 Find parks, playgrounds, trails, and youth sports programs that provide fun and safe places for you to be active, build strength and confidence, enjoy nature, learn teamwork, and improve your physical and mental health.
               </p>
               <a href="https://parks.indy.gov/" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>
@@ -1376,30 +1400,30 @@ export default function App() {
                 Youth sports
               </a>
 
-              <br />
+              <div style={styles.halfHeightSpace} />
 
-              <h3 style={{ fontWeight: 'bold', fontSize: '17px', margin: '10px 0 6px 0' }}>Community Recreation Centers</h3>
-              <p style={{ margin: '0 0 8px 0' }}>
+              <h3 style={{ ...styles.smallContentHeader, color: charBlack, fontSize: '16px' }}>Community Recreation Centers</h3>
+              <p style={styles.smallContentText}>
                 Find a Community Center near you to stay active, learn new skills, and spend time with others. Many offer free or low-cost programs that help kids and families stay healthy, active, and connected.
               </p>
               <a href="https://parks.indy.gov/programs/free-meals-programs/?utm_source=chatgpt.com" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>
                 Map of Indianapolis Community Centers
               </a>
 
-              <br />
+              <div style={styles.halfHeightSpace} />
 
-              <h3 style={{ fontWeight: 'bold', fontSize: '17px', margin: '10px 0 6px 0' }}>Homework Help</h3>
-              <p style={{ margin: '0 0 8px 0' }}>
+              <h3 style={{ ...styles.smallContentHeader, color: charBlack, fontSize: '16px' }}>Homework Help</h3>
+              <p style={styles.smallContentText}>
                 Find programs that offer you free or low-cost support from teachers, tutors, or volunteers to better understand schoolwork, complete assignments, and build confidence in learning.
               </p>
               <a href="https://www.indypl.org/services/homework-help" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>
                 Indianapolis Public Library
               </a>
 
-              <br />
+              <div style={styles.halfHeightSpace} />
 
-              <h3 style={{ fontWeight: 'bold', fontSize: '17px', margin: '10px 0 6px 0' }}>Mentoring</h3>
-              <p style={{ margin: '0 0 8px 0' }}>
+              <h3 style={{ ...styles.smallContentHeader, color: charBlack, fontSize: '16px' }}>Mentoring</h3>
+              <p style={styles.smallContentText}>
                 Find a trusted adult who encourages, supports, and guides you by helping you build confidence, develop new skills, set goals, and succeed in school and life.
               </p>
               <a href="https://www.bebigforkids.org/" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>
@@ -1420,26 +1444,26 @@ export default function App() {
             </div>
           )}
 
-          {/* Survey Page */}
+          {/* EDIT 19 Requirement: Survey Page Updates */}
           {currentPage === 'survey' && (
-            <div style={{ textAlign: 'left', maxWidth: '750px', lineHeight: '1.6' }}>
+            <div style={{ textAlign: 'left', maxWidth: '750px' }}>
               <h2 style={{ color: steelBlue, fontFamily: manropeFont, fontSize: '24px', fontWeight: 'bold', marginBottom: '15px' }}>
                 Survey
               </h2>
 
-              <p style={{ fontWeight: 'bold', fontSize: '18px', margin: '0 0 6px 0' }}>
+              <p style={{ fontWeight: 'bold', fontSize: '16px', margin: '0 0 4px 0' }}>
                 Help Us Help You!
               </p>
-              <p style={{ margin: '0 0 15px 0' }}>
-                Your answers can help us understand what healthy habits are easiest and hardest for students. Your responses are voluntary and anonymous. Additionally, you can find additional information, programs, and community resources that support your health, learning, and success by selecting the Indy Community Resources page in the left hand navigation bar.
+              <p style={styles.smallContentText}>
+                Your answers can help us understand what healthy habits are easiest and hardest for students. Your responses are voluntary and anonymous. Additionally, you can find additional information, programs, and community resources that support your health, learning, and success by selecting the Community Resources page in the left hand navigation bar.
               </p>
 
-              <br />
+              <div style={styles.halfHeightSpace} />
 
               <form onSubmit={handleSurveySubmit}>
                 {currentUserRole === 'Teacher' ? (
-                  <div style={{ marginBottom: '20px' }}>
-                    <p style={{ fontWeight: 'bold', margin: '0 0 8px 0' }}>
+                  <div style={{ marginBottom: '15px' }}>
+                    <p style={{ ...styles.smallContentHeader, margin: '0 0 6px 0' }}>
                       What is the biggest health or wellness challenge you see affecting your students' ability to learn?
                     </p>
                     <select
@@ -1460,8 +1484,8 @@ export default function App() {
                 ) : (
                   <div>
                     {/* Q1 */}
-                    <div style={{ marginBottom: '20px' }}>
-                      <p style={{ fontWeight: 'bold', margin: '0 0 8px 0' }}>
+                    <div style={{ marginBottom: '15px' }}>
+                      <p style={{ ...styles.smallContentHeader, margin: '0 0 6px 0' }}>
                         Which healthy habit is the hardest for you to practice consistently?
                       </p>
                       <select
@@ -1479,9 +1503,9 @@ export default function App() {
                       </select>
                     </div>
 
-                    {/* Q2 */}
-                    <div style={{ marginBottom: '20px' }}>
-                      <p style={{ fontWeight: 'bold', margin: '0 0 8px 0' }}>
+                    {/* EDIT 19 Requirement: Q2 allows multiple checkboxes */}
+                    <div style={{ marginBottom: '15px' }}>
+                      <p style={{ ...styles.smallContentHeader, margin: '0 0 6px 0' }}>
                         What makes healthy habits difficult for you?
                       </p>
                       {[
@@ -1494,13 +1518,12 @@ export default function App() {
                         "Something else",
                         "Nothing in particular right now"
                       ].map((opt) => (
-                        <label key={opt} style={{ display: 'block', margin: '4px 0', cursor: 'pointer' }}>
+                        <label key={opt} style={{ display: 'block', margin: '3px 0', cursor: 'pointer', ...styles.smallContentText }}>
                           <input
-                            type="radio"
-                            name="surveyDifficulty"
+                            type="checkbox"
                             value={opt}
-                            checked={surveyStudentDifficultyReason === opt}
-                            onChange={(e) => setSurveyStudentDifficultyReason(e.target.value)}
+                            checked={surveyStudentDifficultyReason.includes(opt)}
+                            onChange={() => toggleArraySelection(surveyStudentDifficultyReason, setSurveyStudentDifficultyReason, opt)}
                             style={{ marginRight: '8px' }}
                           />
                           {opt}
@@ -1508,9 +1531,9 @@ export default function App() {
                       ))}
                     </div>
 
-                    {/* Q3 */}
-                    <div style={{ marginBottom: '20px' }}>
-                      <p style={{ fontWeight: 'bold', margin: '0 0 8px 0' }}>
+                    {/* EDIT 19 Requirement: Q3 allows multiple checkboxes */}
+                    <div style={{ marginBottom: '15px' }}>
+                      <p style={{ ...styles.smallContentHeader, margin: '0 0 6px 0' }}>
                         Which free community resources would you like to learn more about?
                       </p>
                       {[
@@ -1523,13 +1546,12 @@ export default function App() {
                         "Mentoring programs",
                         "None right now"
                       ].map((opt) => (
-                        <label key={opt} style={{ display: 'block', margin: '4px 0', cursor: 'pointer' }}>
+                        <label key={opt} style={{ display: 'block', margin: '3px 0', cursor: 'pointer', ...styles.smallContentText }}>
                           <input
-                            type="radio"
-                            name="surveyResources"
+                            type="checkbox"
                             value={opt}
-                            checked={surveyStudentResourceInterest === opt}
-                            onChange={(e) => setSurveyStudentResourceInterest(e.target.value)}
+                            checked={surveyStudentResourceInterest.includes(opt)}
+                            onChange={() => toggleArraySelection(surveyStudentResourceInterest, setSurveyStudentResourceInterest, opt)}
                             style={{ marginRight: '8px' }}
                           />
                           {opt}
@@ -1537,9 +1559,9 @@ export default function App() {
                       ))}
                     </div>
 
-                    {/* Q4 */}
-                    <div style={{ marginBottom: '20px' }}>
-                      <p style={{ fontWeight: 'bold', margin: '0 0 8px 0' }}>
+                    {/* EDIT 19 Requirement: Q4 allows multiple checkboxes */}
+                    <div style={{ marginBottom: '15px' }}>
+                      <p style={{ ...styles.smallContentHeader, margin: '0 0 6px 0' }}>
                         How has practicing healthy habits affected you this month?
                       </p>
                       {[
@@ -1550,13 +1572,12 @@ export default function App() {
                         "I feel stronger or more active",
                         "I haven’t noticed a difference, yet"
                       ].map((opt) => (
-                        <label key={opt} style={{ display: 'block', margin: '4px 0', cursor: 'pointer' }}>
+                        <label key={opt} style={{ display: 'block', margin: '3px 0', cursor: 'pointer', ...styles.smallContentText }}>
                           <input
-                            type="radio"
-                            name="surveyImpact"
+                            type="checkbox"
                             value={opt}
-                            checked={surveyStudentImpact === opt}
-                            onChange={(e) => setSurveyStudentImpact(e.target.value)}
+                            checked={surveyStudentImpact.includes(opt)}
+                            onChange={() => toggleArraySelection(surveyStudentImpact, setSurveyStudentImpact, opt)}
                             style={{ marginRight: '8px' }}
                           />
                           {opt}
@@ -1565,8 +1586,8 @@ export default function App() {
                     </div>
 
                     {/* Q5 */}
-                    <div style={{ marginBottom: '20px' }}>
-                      <p style={{ fontWeight: 'bold', margin: '0 0 8px 0' }}>
+                    <div style={{ marginBottom: '15px' }}>
+                      <p style={{ ...styles.smallContentHeader, margin: '0 0 6px 0' }}>
                         Would you like more healthy habit tips and local resources?
                       </p>
                       <select
@@ -1583,7 +1604,7 @@ export default function App() {
                   </div>
                 )}
 
-                <br />
+                <div style={styles.halfHeightSpace} />
 
                 <button type="submit" style={{ ...styles.button, width: '180px' }}>
                   Submit
