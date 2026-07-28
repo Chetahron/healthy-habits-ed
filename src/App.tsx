@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import logo from './assets/logo.png';
+import sidebarLogo from './assets/sidebar-logo.png';
 
 // --- Habit Types & Definitions ---
 export type HabitKey =
@@ -396,7 +397,6 @@ export default function App() {
     return Math.round((sum / validValues.length) * 10) / 10;
   };
 
-  // EDIT 16: Classroom Weekly Average calculation
   const getClassroomWeeklyAverage = (key: HabitKey): number => {
     const code = getCurrentUserClassroomCode().trim().toLowerCase();
     if (code === 'n/a') return 0;
@@ -449,7 +449,6 @@ export default function App() {
     return result;
   };
 
-  // EDIT 16: Yellow circle is made larger to closely match check and X size
   const renderStatusIcon = (key: HabitKey, avg: number, grade: string) => {
     const status = getHabitColor(key, avg, grade);
     if (status === 'green') return <span style={{ color: 'green', fontWeight: 'bold' }}>✓</span>;
@@ -556,17 +555,19 @@ export default function App() {
       maxWidth: '220px',
       backgroundColor: '#ffffff',
       borderRadius: '8px',
-      padding: '8px 12px',
+      padding: '6px 8px',
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
       marginBottom: '10px',
       boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
       boxSizing: 'border-box',
+      overflow: 'hidden'
     },
     sidebarLogoImage: {
       width: '100%',
-      maxHeight: '45px',
+      height: 'auto',
+      maxHeight: '85px',
       objectFit: 'contain',
       display: 'block',
     },
@@ -854,16 +855,15 @@ export default function App() {
     <div style={styles.appContainer}>
       <div style={styles.dashboardLayout}>
         <div style={styles.sidebar}>
-          {/* Top-Left Logo Box: Matched to the size and alignment of the panels below */}
+          {/* Top-Left Sidebar Logo Box using the new sidebar-logo */}
           <div style={styles.sidebarLogoBox}>
             <img
-              src={logo}
+              src={sidebarLogo}
               alt="HealthyHabitsED Logo"
               style={styles.sidebarLogoImage}
             />
           </div>
 
-          {/* EDIT 16 Requirement: My Classroom Scorecard button at top */}
           <button
             style={{
               ...styles.navButton,
@@ -925,7 +925,6 @@ export default function App() {
           <div style={{ textAlign: 'left', marginBottom: '25px' }}>
             <img src={logo} alt="HealthyHabitsED Logo" style={styles.headerLogoImage} />
 
-            {/* EDIT 16 Requirement: Add My Classroom above My Grade */}
             <div style={{ color: charBlack, fontFamily: manropeFont, fontSize: '16px', lineHeight: '1.5' }}>
               My Classroom: {currentUserClassroom}
             </div>
@@ -937,7 +936,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* EDIT 16 Requirement: My Classroom Scorecard Page */}
+          {/* My Classroom Scorecard Page */}
           {currentPage === 'classroom' && (
             <div style={{ textAlign: 'left', maxWidth: '700px' }}>
               <h2 style={{ color: steelBlue, fontFamily: manropeFont, fontSize: '24px', fontWeight: 'bold' }}>
