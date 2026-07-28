@@ -82,12 +82,12 @@ export default function App() {
   // View Data State
   const [selectedCategory, setSelectedCategory] = useState<HabitKey>('sleep');
 
-  // Survey Form State
+  // Survey Form State (Edit 19: Checkboxes for multiple selections)
   const [surveyTeacherChallenge, setSurveyTeacherChallenge] = useState('');
-  const [surveyStudentHardestHabit, setSurveyStudentHardestHabit] = useState('');
+  const [surveyStudentHardestHabit, setSurveyStudentHardestHabit] = useState<string[]>([]);
   const [surveyStudentDifficultyReason, setSurveyStudentDifficultyReason] = useState<string[]>([]);
   const [surveyStudentResourceInterest, setSurveyStudentResourceInterest] = useState<string[]>([]);
-  const [surveyStudentImpact, setSurveyStudentImpact] = useState<string[]>([]);
+  const [surveyStudentImpact, setSurveyStudentImpact] = useState('');
   const [surveyStudentMoreTips, setSurveyStudentMoreTips] = useState('');
   const [surveySuccessMsg, setSurveySuccessMsg] = useState('');
 
@@ -158,9 +158,9 @@ export default function App() {
   };
 
   // Helper: Get Role for Current User
-  const getCurrentUserRole = (): 'Teacher' | 'Student' | 'N/A' => {
-    if (!currentUser || !usersDb[currentUser]) return 'N/A';
-    return usersDb[currentUser].role || 'N/A';
+  const getCurrentUserRole = (): 'Teacher' | 'Student' => {
+    if (!currentUser || !usersDb[currentUser]) return 'Student';
+    return usersDb[currentUser].role || 'Student';
   };
 
   // Helper: Get Classroom Code for Current User
@@ -426,14 +426,6 @@ export default function App() {
     setTimeout(() => setSurveySuccessMsg(''), 4000);
   };
 
-  const toggleArraySelection = (arr: string[], setArr: React.Dispatch<React.SetStateAction<string[]>>, val: string) => {
-    if (arr.includes(val)) {
-      setArr(arr.filter((item) => item !== val));
-    } else {
-      setArr([...arr, val]);
-    }
-  };
-
   // --- Calculation Helpers ---
   const getUserEntries = (): DailyEntry[] => {
     if (!currentUser || !usersDb[currentUser]) return [];
@@ -604,10 +596,9 @@ export default function App() {
       gap: '10px',
       boxSizing: 'border-box',
     },
-    // EDIT 19 Requirement: Twice as wide as before (220px)
     sidebarLogoBox: {
       width: '100%',
-      maxWidth: '220px',
+      maxWidth: '110px',
       backgroundColor: 'transparent',
       padding: '6px',
       display: 'flex',
@@ -616,10 +607,12 @@ export default function App() {
       marginBottom: '8px',
       boxSizing: 'border-box',
     },
+    // Edit 19 & 20: Heart/brain sidebar logo width increased by 100% (200% total)
     sidebarLogoImage: {
-      width: '100%',
+      width: '200%',
+      maxWidth: 'none',
       height: 'auto',
-      maxHeight: '80px',
+      maxHeight: '120px',
       objectFit: 'contain',
       display: 'block',
     },
@@ -698,22 +691,36 @@ export default function App() {
       color: steelBlue,
       textDecoration: 'underline',
       marginBottom: '6px',
-      fontSize: '14px',
+      fontSize: '13px',
       fontFamily: manropeFont
     },
-    // EDIT 19 Requirement: Reduced font sizes for content sections
+    // Edit 19: Reduced font sizes for content sections
     smallContentHeader: {
       fontSize: '15px',
       fontWeight: 'bold',
-      margin: '6px 0 3px 0'
+      margin: '6px 0 3px 0',
+      color: charBlack,
+      fontFamily: manropeFont
     },
     smallContentText: {
-      fontSize: '14px',
-      margin: '0 0 8px 0',
-      lineHeight: '1.5'
+      fontSize: '13px',
+      margin: '0 0 6px 0',
+      lineHeight: '1.4',
+      color: charBlack,
+      fontFamily: manropeFont
     },
     halfHeightSpace: {
       height: '10px'
+    },
+    // Edit 20: Top right page info formatting (smaller font size, bold labels before colon)
+    topRightInfoContainer: {
+      fontSize: '14px',
+      color: charBlack,
+      fontFamily: manropeFont,
+      lineHeight: '1.5'
+    },
+    topRightInfoLabel: {
+      fontWeight: 'bold'
     }
   };
 
@@ -1026,21 +1033,15 @@ export default function App() {
         </div>
 
         <div style={styles.mainContent}>
-          {/* EDIT 19 Requirement: Add "My Status:" above "My Classroom:" */}
+          {/* Top header image and info with Edit 19 (My Status) and Edit 20 formatting */}
           <div style={{ textAlign: 'left', marginBottom: '25px' }}>
             <img src={logo} alt="HealthyHabitsED Logo" style={styles.headerLogoImage} />
 
-            <div style={{ color: charBlack, fontFamily: manropeFont, fontSize: '16px', lineHeight: '1.5' }}>
-              My Status: {currentUserRole}
-            </div>
-            <div style={{ color: charBlack, fontFamily: manropeFont, fontSize: '16px', lineHeight: '1.5' }}>
-              My Classroom: {currentUserClassroom}
-            </div>
-            <div style={{ color: charBlack, fontFamily: manropeFont, fontSize: '16px', lineHeight: '1.5' }}>
-              My Grade: {currentUserGrade}
-            </div>
-            <div style={{ color: charBlack, fontFamily: manropeFont, fontSize: '16px', lineHeight: '1.5' }}>
-              Today's Date: {getTodayESTFormatted()}
+            <div style={styles.topRightInfoContainer}>
+              <div><span style={styles.topRightInfoLabel}>My Status:</span> {currentUserRole}</div>
+              <div><span style={styles.topRightInfoLabel}>My Classroom:</span> {currentUserClassroom}</div>
+              <div><span style={styles.topRightInfoLabel}>My Grade:</span> {currentUserGrade}</div>
+              <div><span style={styles.topRightInfoLabel}>Today's Date:</span> {getTodayESTFormatted()}</div>
             </div>
           </div>
 
@@ -1226,14 +1227,14 @@ export default function App() {
             </div>
           )}
 
-          {/* EDIT 19 Requirement: Learning Center Page Updates */}
+          {/* Learning Center Page (Edit 19: Simplified headings & smaller black text) */}
           {currentPage === 'learning' && (
-            <div style={{ textAlign: 'left', maxWidth: '800px' }}>
+            <div style={{ textAlign: 'left', maxWidth: '800px', lineHeight: '1.4' }}>
               <h2 style={{ color: steelBlue, fontFamily: manropeFont, fontSize: '24px', fontWeight: 'bold', marginBottom: '15px' }}>
                 Learning Center
               </h2>
 
-              <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '15px', marginBottom: '6px' }}>
+              <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '10px', marginBottom: '4px' }}>
                 Sleep
               </h3>
               <p style={styles.smallContentText}>
@@ -1248,7 +1249,7 @@ export default function App() {
 
               <div style={styles.halfHeightSpace} />
 
-              <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '15px', marginBottom: '6px' }}>
+              <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '10px', marginBottom: '4px' }}>
                 Physical Activity
               </h3>
               <p style={styles.smallContentText}>
@@ -1263,7 +1264,7 @@ export default function App() {
 
               <div style={styles.halfHeightSpace} />
 
-              <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '15px', marginBottom: '6px' }}>
+              <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '10px', marginBottom: '4px' }}>
                 Water
               </h3>
               <p style={styles.smallContentText}>
@@ -1278,7 +1279,7 @@ export default function App() {
 
               <div style={styles.halfHeightSpace} />
 
-              <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '15px', marginBottom: '6px' }}>
+              <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '10px', marginBottom: '4px' }}>
                 Fruits & Vegetables
               </h3>
               <p style={styles.smallContentText}>
@@ -1293,7 +1294,7 @@ export default function App() {
 
               <div style={styles.halfHeightSpace} />
 
-              <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '15px', marginBottom: '6px' }}>
+              <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '10px', marginBottom: '4px' }}>
                 Whole Foods
               </h3>
               <p style={styles.smallContentText}>
@@ -1308,7 +1309,7 @@ export default function App() {
 
               <div style={styles.halfHeightSpace} />
 
-              <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '15px', marginBottom: '6px' }}>
+              <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '10px', marginBottom: '4px' }}>
                 Ultra-Processed Foods
               </h3>
               <p style={styles.smallContentText}>
@@ -1323,7 +1324,7 @@ export default function App() {
 
               <div style={styles.halfHeightSpace} />
 
-              <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '15px', marginBottom: '6px' }}>
+              <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '10px', marginBottom: '4px' }}>
                 Sugary Drinks
               </h3>
               <p style={styles.smallContentText}>
@@ -1338,7 +1339,7 @@ export default function App() {
 
               <div style={styles.halfHeightSpace} />
 
-              <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '15px', marginBottom: '6px' }}>
+              <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '10px', marginBottom: '4px' }}>
                 Mood
               </h3>
               <p style={styles.smallContentText}>
@@ -1353,14 +1354,14 @@ export default function App() {
             </div>
           )}
 
-          {/* EDIT 19 Requirement: Community Resources Page Updates */}
+          {/* Community Resources Page (Edit 19: Smaller black text & adjusted spacing) */}
           {currentPage === 'resources' && (
-            <div style={{ textAlign: 'left', maxWidth: '800px' }}>
+            <div style={{ textAlign: 'left', maxWidth: '800px', lineHeight: '1.4' }}>
               <h2 style={{ color: steelBlue, fontFamily: manropeFont, fontSize: '24px', fontWeight: 'bold', marginBottom: '15px' }}>
                 Community Resources in Indianapolis, IN
               </h2>
 
-              <h3 style={{ ...styles.smallContentHeader, color: charBlack, fontSize: '16px', marginTop: '5px' }}>Free Groceries and Meals</h3>
+              <h3 style={{ fontWeight: 'bold', fontSize: '15px', margin: '8px 0 3px 0', fontFamily: manropeFont }}>Free Groceries and Meals</h3>
               <p style={styles.smallContentText}>
                 Find services where you can search for free groceries and meals if you or your family need extra help. Food pantries, specifically, help make sure everyone has access to healthy food, no matter their financial situation.
               </p>
@@ -1373,7 +1374,7 @@ export default function App() {
 
               <div style={styles.halfHeightSpace} />
 
-              <h3 style={{ ...styles.smallContentHeader, color: charBlack, fontSize: '16px' }}>Free Student Meal Services</h3>
+              <h3 style={{ fontWeight: 'bold', fontSize: '15px', margin: '8px 0 3px 0', fontFamily: manropeFont }}>Free Student Meal Services</h3>
               <p style={styles.smallContentText}>
                 Find free student meal programs that provide nutritious breakfast, lunch, and snack options, helping you stay healthy, energized, and ready to learn during the school year and summer.
               </p>
@@ -1386,7 +1387,7 @@ export default function App() {
 
               <div style={styles.halfHeightSpace} />
 
-              <h3 style={{ ...styles.smallContentHeader, color: charBlack, fontSize: '16px' }}>Youth Activities - Parks, Playgrounds, Walking Trails & Sports</h3>
+              <h3 style={{ fontWeight: 'bold', fontSize: '15px', margin: '8px 0 3px 0', fontFamily: manropeFont }}>Youth Activities - Parks, Playgrounds, Walking Trails & Sports</h3>
               <p style={styles.smallContentText}>
                 Find parks, playgrounds, trails, and youth sports programs that provide fun and safe places for you to be active, build strength and confidence, enjoy nature, learn teamwork, and improve your physical and mental health.
               </p>
@@ -1402,7 +1403,7 @@ export default function App() {
 
               <div style={styles.halfHeightSpace} />
 
-              <h3 style={{ ...styles.smallContentHeader, color: charBlack, fontSize: '16px' }}>Community Recreation Centers</h3>
+              <h3 style={{ fontWeight: 'bold', fontSize: '15px', margin: '8px 0 3px 0', fontFamily: manropeFont }}>Community Recreation Centers</h3>
               <p style={styles.smallContentText}>
                 Find a Community Center near you to stay active, learn new skills, and spend time with others. Many offer free or low-cost programs that help kids and families stay healthy, active, and connected.
               </p>
@@ -1412,7 +1413,7 @@ export default function App() {
 
               <div style={styles.halfHeightSpace} />
 
-              <h3 style={{ ...styles.smallContentHeader, color: charBlack, fontSize: '16px' }}>Homework Help</h3>
+              <h3 style={{ fontWeight: 'bold', fontSize: '15px', margin: '8px 0 3px 0', fontFamily: manropeFont }}>Homework Help</h3>
               <p style={styles.smallContentText}>
                 Find programs that offer you free or low-cost support from teachers, tutors, or volunteers to better understand schoolwork, complete assignments, and build confidence in learning.
               </p>
@@ -1422,7 +1423,7 @@ export default function App() {
 
               <div style={styles.halfHeightSpace} />
 
-              <h3 style={{ ...styles.smallContentHeader, color: charBlack, fontSize: '16px' }}>Mentoring</h3>
+              <h3 style={{ fontWeight: 'bold', fontSize: '15px', margin: '8px 0 3px 0', fontFamily: manropeFont }}>Mentoring</h3>
               <p style={styles.smallContentText}>
                 Find a trusted adult who encourages, supports, and guides you by helping you build confidence, develop new skills, set goals, and succeed in school and life.
               </p>
@@ -1444,14 +1445,14 @@ export default function App() {
             </div>
           )}
 
-          {/* EDIT 19 Requirement: Survey Page Updates */}
+          {/* Survey Page (Edit 19: Checkboxes for Q1, Q2, Q3 + removed "Indy" + smaller black text) */}
           {currentPage === 'survey' && (
-            <div style={{ textAlign: 'left', maxWidth: '750px' }}>
+            <div style={{ textAlign: 'left', maxWidth: '750px', lineHeight: '1.4' }}>
               <h2 style={{ color: steelBlue, fontFamily: manropeFont, fontSize: '24px', fontWeight: 'bold', marginBottom: '15px' }}>
                 Survey
               </h2>
 
-              <p style={{ fontWeight: 'bold', fontSize: '16px', margin: '0 0 4px 0' }}>
+              <p style={{ fontWeight: 'bold', fontSize: '16px', margin: '0 0 4px 0', fontFamily: manropeFont }}>
                 Help Us Help You!
               </p>
               <p style={styles.smallContentText}>
@@ -1463,7 +1464,7 @@ export default function App() {
               <form onSubmit={handleSurveySubmit}>
                 {currentUserRole === 'Teacher' ? (
                   <div style={{ marginBottom: '15px' }}>
-                    <p style={{ ...styles.smallContentHeader, margin: '0 0 6px 0' }}>
+                    <p style={{ fontWeight: 'bold', fontSize: '14px', margin: '0 0 6px 0', fontFamily: manropeFont }}>
                       What is the biggest health or wellness challenge you see affecting your students' ability to learn?
                     </p>
                     <select
@@ -1483,30 +1484,42 @@ export default function App() {
                   </div>
                 ) : (
                   <div>
-                    {/* Q1 */}
+                    {/* Q1: Checkboxes */}
                     <div style={{ marginBottom: '15px' }}>
-                      <p style={{ ...styles.smallContentHeader, margin: '0 0 6px 0' }}>
-                        Which healthy habit is the hardest for you to practice consistently?
+                      <p style={{ fontWeight: 'bold', fontSize: '14px', margin: '0 0 6px 0', fontFamily: manropeFont }}>
+                        Which healthy habit is the hardest for you to practice consistently? (Select all that apply)
                       </p>
-                      <select
-                        value={surveyStudentHardestHabit}
-                        onChange={(e) => setSurveyStudentHardestHabit(e.target.value)}
-                        style={{ ...styles.inputBox, maxWidth: '380px' }}
-                      >
-                        <option value="">Select an option...</option>
-                        <option value="Getting enough sleep">Getting enough sleep</option>
-                        <option value="Drinking enough water">Drinking enough water</option>
-                        <option value="Eating fruits and vegetables">Eating fruits and vegetables</option>
-                        <option value="Being physically active">Being physically active</option>
-                        <option value="Limiting sugary drinks or ultra-processed foods">Limiting sugary drinks or ultra-processed foods</option>
-                        <option value="Nothing in particular right now">Nothing in particular right now</option>
-                      </select>
+                      {[
+                        "Getting enough sleep",
+                        "Drinking enough water",
+                        "Eating fruits and vegetables",
+                        "Being physically active",
+                        "Limiting sugary drinks or ultra-processed foods",
+                        "Nothing in particular right now"
+                      ].map((opt) => (
+                        <label key={opt} style={{ display: 'block', margin: '3px 0', cursor: 'pointer', fontSize: '13px', fontFamily: manropeFont }}>
+                          <input
+                            type="checkbox"
+                            value={opt}
+                            checked={surveyStudentHardestHabit.includes(opt)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSurveyStudentHardestHabit([...surveyStudentHardestHabit, opt]);
+                              } else {
+                                setSurveyStudentHardestHabit(surveyStudentHardestHabit.filter((item) => item !== opt));
+                              }
+                            }}
+                            style={{ marginRight: '8px' }}
+                          />
+                          {opt}
+                        </label>
+                      ))}
                     </div>
 
-                    {/* EDIT 19 Requirement: Q2 allows multiple checkboxes */}
+                    {/* Q2: Checkboxes */}
                     <div style={{ marginBottom: '15px' }}>
-                      <p style={{ ...styles.smallContentHeader, margin: '0 0 6px 0' }}>
-                        What makes healthy habits difficult for you?
+                      <p style={{ fontWeight: 'bold', fontSize: '14px', margin: '0 0 6px 0', fontFamily: manropeFont }}>
+                        What makes healthy habits difficult for you? (Select all that apply)
                       </p>
                       {[
                         "I don't have enough time",
@@ -1518,12 +1531,18 @@ export default function App() {
                         "Something else",
                         "Nothing in particular right now"
                       ].map((opt) => (
-                        <label key={opt} style={{ display: 'block', margin: '3px 0', cursor: 'pointer', ...styles.smallContentText }}>
+                        <label key={opt} style={{ display: 'block', margin: '3px 0', cursor: 'pointer', fontSize: '13px', fontFamily: manropeFont }}>
                           <input
                             type="checkbox"
                             value={opt}
                             checked={surveyStudentDifficultyReason.includes(opt)}
-                            onChange={() => toggleArraySelection(surveyStudentDifficultyReason, setSurveyStudentDifficultyReason, opt)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSurveyStudentDifficultyReason([...surveyStudentDifficultyReason, opt]);
+                              } else {
+                                setSurveyStudentDifficultyReason(surveyStudentDifficultyReason.filter((item) => item !== opt));
+                              }
+                            }}
                             style={{ marginRight: '8px' }}
                           />
                           {opt}
@@ -1531,10 +1550,10 @@ export default function App() {
                       ))}
                     </div>
 
-                    {/* EDIT 19 Requirement: Q3 allows multiple checkboxes */}
+                    {/* Q3: Checkboxes */}
                     <div style={{ marginBottom: '15px' }}>
-                      <p style={{ ...styles.smallContentHeader, margin: '0 0 6px 0' }}>
-                        Which free community resources would you like to learn more about?
+                      <p style={{ fontWeight: 'bold', fontSize: '14px', margin: '0 0 6px 0', fontFamily: manropeFont }}>
+                        Which free community resources would you like to learn more about? (Select all that apply)
                       </p>
                       {[
                         "Free student meals",
@@ -1546,12 +1565,18 @@ export default function App() {
                         "Mentoring programs",
                         "None right now"
                       ].map((opt) => (
-                        <label key={opt} style={{ display: 'block', margin: '3px 0', cursor: 'pointer', ...styles.smallContentText }}>
+                        <label key={opt} style={{ display: 'block', margin: '3px 0', cursor: 'pointer', fontSize: '13px', fontFamily: manropeFont }}>
                           <input
                             type="checkbox"
                             value={opt}
                             checked={surveyStudentResourceInterest.includes(opt)}
-                            onChange={() => toggleArraySelection(surveyStudentResourceInterest, setSurveyStudentResourceInterest, opt)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSurveyStudentResourceInterest([...surveyStudentResourceInterest, opt]);
+                              } else {
+                                setSurveyStudentResourceInterest(surveyStudentResourceInterest.filter((item) => item !== opt));
+                              }
+                            }}
                             style={{ marginRight: '8px' }}
                           />
                           {opt}
@@ -1559,9 +1584,9 @@ export default function App() {
                       ))}
                     </div>
 
-                    {/* EDIT 19 Requirement: Q4 allows multiple checkboxes */}
+                    {/* Q4 */}
                     <div style={{ marginBottom: '15px' }}>
-                      <p style={{ ...styles.smallContentHeader, margin: '0 0 6px 0' }}>
+                      <p style={{ fontWeight: 'bold', fontSize: '14px', margin: '0 0 6px 0', fontFamily: manropeFont }}>
                         How has practicing healthy habits affected you this month?
                       </p>
                       {[
@@ -1572,12 +1597,13 @@ export default function App() {
                         "I feel stronger or more active",
                         "I haven’t noticed a difference, yet"
                       ].map((opt) => (
-                        <label key={opt} style={{ display: 'block', margin: '3px 0', cursor: 'pointer', ...styles.smallContentText }}>
+                        <label key={opt} style={{ display: 'block', margin: '3px 0', cursor: 'pointer', fontSize: '13px', fontFamily: manropeFont }}>
                           <input
-                            type="checkbox"
+                            type="radio"
+                            name="surveyImpact"
                             value={opt}
-                            checked={surveyStudentImpact.includes(opt)}
-                            onChange={() => toggleArraySelection(surveyStudentImpact, setSurveyStudentImpact, opt)}
+                            checked={surveyStudentImpact === opt}
+                            onChange={(e) => setSurveyStudentImpact(e.target.value)}
                             style={{ marginRight: '8px' }}
                           />
                           {opt}
@@ -1587,7 +1613,7 @@ export default function App() {
 
                     {/* Q5 */}
                     <div style={{ marginBottom: '15px' }}>
-                      <p style={{ ...styles.smallContentHeader, margin: '0 0 6px 0' }}>
+                      <p style={{ fontWeight: 'bold', fontSize: '14px', margin: '0 0 6px 0', fontFamily: manropeFont }}>
                         Would you like more healthy habit tips and local resources?
                       </p>
                       <select
@@ -1606,13 +1632,13 @@ export default function App() {
 
                 <div style={styles.halfHeightSpace} />
 
-                <button type="submit" style={{ ...styles.button, width: '180px' }}>
+                <button type="submit" style={{ ...styles.button, width: '180px', marginTop: '10px' }}>
                   Submit
                 </button>
               </form>
 
               {surveySuccessMsg && (
-                <div style={{ color: 'green', marginTop: '12px', fontWeight: 'bold' }}>
+                <div style={{ color: 'green', marginTop: '10px', fontWeight: 'bold', fontSize: '14px', fontFamily: manropeFont }}>
                   {surveySuccessMsg}
                 </div>
               )}
