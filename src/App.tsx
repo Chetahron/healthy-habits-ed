@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import logo from './assets/logo.png';
-import sidebarLogo from './assets/sidebar-logo.png';
+import sidebarLogo from './assets/new-sidebar-logo.png';
 
 // --- Habit Types & Definitions ---
 export type HabitKey =
@@ -207,7 +207,6 @@ export default function App() {
     }
   };
 
-  // EDIT 18: Sugary Drinks 0 = green, 1 = yellow, 2+ = red
   const getHabitColor = (key: HabitKey, val: number, grade: string): 'red' | 'yellow' | 'green' => {
     if (key === 'sugaryDrinks') {
       return val === 0 ? 'green' : val === 1 ? 'yellow' : 'red';
@@ -267,7 +266,6 @@ export default function App() {
     }
   };
 
-  // EDIT 18: Auto-fill today's data or reset to lowest values when navigating to Log page or changing user
   useEffect(() => {
     if (!currentUser || !usersDb[currentUser]) return;
 
@@ -435,7 +433,6 @@ export default function App() {
     return Object.values(entriesObj).sort((a, b) => a.date.localeCompare(b.date));
   };
 
-  // EDIT 18: Round to whole numbers (0.4 rounds down, 0.5 rounds up)
   const getWeeklyAverage = (key: HabitKey): number => {
     const entries = getUserEntries();
     if (entries.length === 0) return 0;
@@ -446,7 +443,6 @@ export default function App() {
     return Math.round(sum / validValues.length);
   };
 
-  // EDIT 18: Round to whole numbers (0.4 rounds down, 0.5 rounds up)
   const getClassroomWeeklyAverage = (key: HabitKey): number => {
     const code = getCurrentUserClassroomCode().trim().toLowerCase();
     if (code === 'n/a') return 0;
@@ -603,8 +599,7 @@ export default function App() {
     sidebarLogoBox: {
       width: '100%',
       maxWidth: '110px',
-      backgroundColor: cream,
-      borderRadius: '8px',
+      backgroundColor: 'transparent',
       padding: '6px',
       display: 'flex',
       justifyContent: 'center',
