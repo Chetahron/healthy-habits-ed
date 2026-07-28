@@ -1,145 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import logo from './assets/logo.png';
 
-// ==========================================
-// --- BACKGROUND LOOKUP TABLES ---
-// ==========================================
-
-export const LOOKUP_1 = {
-  title: "Lookup 1",
-  columns: [
-    "Grade", "Sleep", "Brush Teeth", "Physical Activity", "Outdoor Time",
-    "Reading", "Recreational Screen Time", "Water", "Fruits & Vegetables",
-    "Whole Foods", "Ultra-Processed Foods", "Sugary Drinks"
-  ],
-  rows: {
-    "K - 5th": {
-      Sleep: "9 - 12 hours / night",
-      "Brush Teeth": "2+ times / day",
-      "Physical Activity": "60+ minutes / day",
-      "Outdoor Time": "60 - 12 minutes / day",
-      Reading: "20 minutes / day",
-      "Recreational Screen Time": "< 120 minutes / day",
-      Water: "6 - 9 cups / day",
-      "Fruits & Vegetables": ">= 5 servings / day",
-      "Whole Foods": ">= 80% / day",
-      "Ultra-Processed Foods": "<= 20% / day",
-      "Sugary Drinks": "0"
-    },
-    "6th - 8th": {
-      Sleep: "8 - 10 hours / night",
-      "Brush Teeth": "X",
-      "Physical Activity": "60+ minutes / day",
-      "Outdoor Time": "60+ minutes / day",
-      Reading: "X",
-      "Recreational Screen Time": "X",
-      Water: "8 - 11 cups / day",
-      "Fruits & Vegetables": ">= 5 servings / day",
-      "Whole Foods": ">= 80% / day",
-      "Ultra-Processed Foods": "<= 20% / day",
-      "Sugary Drinks": "0 - 1 / day"
-    },
-    "9th - 12th": {
-      Sleep: "8 - 10 hours / night",
-      "Brush Teeth": "X",
-      "Physical Activity": "60+ minutes / day",
-      "Outdoor Time": "60+ minutes / day",
-      Reading: "X",
-      "Recreational Screen Time": "X",
-      Water: "9 - 13+ cups / day",
-      "Fruits & Vegetables": ">= 5 servings / day",
-      "Whole Foods": ">= 80% / day",
-      "Ultra-Processed Foods": "<= 20% / day",
-      "Sugary Drinks": "0 - 1 / day"
-    },
-    Increments: {
-      Sleep: "1",
-      "Brush Teeth": "1",
-      "Physical Activity": "15",
-      "Outdoor Time": "15",
-      Reading: "5",
-      "Recreational Screen Time": "20",
-      Water: "1",
-      "Fruits & Vegetables": "1",
-      "Whole Foods": "10",
-      "Ultra-Processed Foods": "10",
-      "Sugary Drinks": "1"
-    }
-  }
-};
-
-export const LOOKUP_2 = {
-  title: "Lookup 2",
-  columns: [
-    "Grade", "Water_Green", "Water_Yellow", "Water_Red",
-    "FruitsVeg_Green", "FruitsVeg_Yellow", "FruitsVeg_Red",
-    "WholeFoods_Green", "WholeFoods_Yellow", "WholeFoods_Red",
-    "UPF_Green", "UPF_Yellow", "UPF_Red",
-    "SugaryDrinks_Green", "SugaryDrinks_Yellow", "SugaryDrinks_Red"
-  ],
-  rows: {
-    "K - 5th": {
-      Water_Green: "6+", Water_Yellow: "5", Water_Red: "0-4",
-      FruitsVeg_Green: "5+", FruitsVeg_Yellow: "3-4", FruitsVeg_Red: "0-2",
-      WholeFoods_Green: "80%+", WholeFoods_Yellow: "60-70%", WholeFoods_Red: "0-50%",
-      UPF_Green: "0-20%", UPF_Yellow: "30-40%", UPF_Red: "50%+",
-      SugaryDrinks_Green: "0", SugaryDrinks_Yellow: "1", SugaryDrinks_Red: "2+"
-    },
-    "6th - 8th": {
-      Water_Green: "8+", Water_Yellow: "7", Water_Red: "0-6",
-      FruitsVeg_Green: "5+", FruitsVeg_Yellow: "3-4", FruitsVeg_Red: "0-2",
-      WholeFoods_Green: "80%+", WholeFoods_Yellow: "60-70%", WholeFoods_Red: "0-50%",
-      UPF_Green: "0-20%", UPF_Yellow: "30-40%", UPF_Red: "50%+",
-      SugaryDrinks_Green: "0-1", SugaryDrinks_Yellow: "2", SugaryDrinks_Red: "3+"
-    },
-    "9th - 12th": {
-      Water_Green: "9+", Water_Yellow: "8", Water_Red: "0-7",
-      FruitsVeg_Green: "5+", FruitsVeg_Yellow: "3-4", FruitsVeg_Red: "0-2",
-      WholeFoods_Green: "80%+", WholeFoods_Yellow: "60-70%", WholeFoods_Red: "0-50%",
-      UPF_Green: "0-20%", UPF_Yellow: "30-40%", UPF_Red: "50%+",
-      SugaryDrinks_Green: "0-1", SugaryDrinks_Yellow: "2", SugaryDrinks_Red: "3+"
-    }
-  }
-};
-
-export const LOOKUP_3 = {
-  title: "Lookup 3",
-  columns: [
-    "Grade", "Sleep_Green", "Sleep_Yellow", "Sleep_Red",
-    "Teeth_Green", "Teeth_Yellow", "Teeth_Red",
-    "PA_Green", "PA_Yellow", "PA_Red",
-    "Outdoor_Green", "Outdoor_Yellow", "Outdoor_Red",
-    "Reading_Green", "Reading_Yellow", "Reading_Red",
-    "Screen_Green", "Screen_Yellow", "Screen_Red"
-  ],
-  rows: {
-    "K - 5th": {
-      Sleep_Green: "9+", Sleep_Yellow: "8", Sleep_Red: "0-7",
-      Teeth_Green: "2+", Teeth_Yellow: "1", Teeth_Red: "0",
-      PA_Green: "60+", PA_Yellow: "30-45", PA_Red: "0-15",
-      Outdoor_Green: "60+", Outdoor_Yellow: "30-45", Outdoor_Red: "0-15",
-      Reading_Green: "20+", Reading_Yellow: "10-15", Reading_Red: "0-5",
-      Screen_Green: "<120", Screen_Yellow: "120-180", Screen_Red: "180+"
-    },
-    "6th - 8th": {
-      Sleep_Green: "8+", Sleep_Yellow: "7", Sleep_Red: "0-6",
-      Teeth_Green: "X", Teeth_Yellow: "X", Teeth_Red: "X",
-      PA_Green: "60+", PA_Yellow: "30-45", PA_Red: "0-15",
-      Outdoor_Green: "60+", Outdoor_Yellow: "30-45", Outdoor_Red: "0-15",
-      Reading_Green: "X", Reading_Yellow: "X", Reading_Red: "X",
-      Screen_Green: "X", Screen_Yellow: "X", Screen_Red: "X"
-    },
-    "9th - 12th": {
-      Sleep_Green: "8+", Sleep_Yellow: "7", Sleep_Red: "0-6",
-      Teeth_Green: "X", Teeth_Yellow: "X", Teeth_Red: "X",
-      PA_Green: "60+", PA_Yellow: "30-45", PA_Red: "0-15",
-      Outdoor_Green: "60+", Outdoor_Yellow: "30-45", Outdoor_Red: "0-15",
-      Reading_Green: "X", Reading_Yellow: "X", Reading_Red: "X",
-      Screen_Green: "X", Screen_Yellow: "X", Screen_Red: "X"
-    }
-  }
-};
-
 // --- Habit Types & Definitions ---
 export type HabitKey =
   | 'sleep'
@@ -182,7 +43,7 @@ interface UserData {
 
 export default function App() {
   // Navigation & Auth State
-  const [currentPage, setCurrentPage] = useState<'login' | 'register' | 'home' | 'log' | 'view'>('login');
+  const [currentPage, setCurrentPage] = useState<'login' | 'register' | 'classroom' | 'home' | 'log' | 'view'>('login');
   const [currentUser, setCurrentUser] = useState<string | null>(null);
 
   // Form Inputs - Login
@@ -286,7 +147,13 @@ export default function App() {
     return teacher?.grade || user.grade || 'N/A';
   };
 
-  // --- Grade-adaptive Habit Configurations ---
+  // Helper: Get Classroom Code for Current User
+  const getCurrentUserClassroomCode = (): string => {
+    if (!currentUser || !usersDb[currentUser]) return 'N/A';
+    return usersDb[currentUser].classroomCode || 'N/A';
+  };
+
+  // Grade-adaptive Habit Configurations
   const getHabitsConfig = (grade: string): HabitConfig[] => {
     if (grade === 'K - 5th') {
       return [
@@ -324,7 +191,7 @@ export default function App() {
     }
   };
 
-  // --- Color Coding Helper ---
+  // Color Coding Helper
   const getHabitColor = (key: HabitKey, val: number, grade: string): 'red' | 'yellow' | 'green' => {
     if (grade === 'K - 5th') {
       switch (key) {
@@ -529,6 +396,39 @@ export default function App() {
     return Math.round((sum / validValues.length) * 10) / 10;
   };
 
+  // EDIT 16: Classroom Weekly Average calculation
+  const getClassroomWeeklyAverage = (key: HabitKey): number => {
+    const code = getCurrentUserClassroomCode().trim().toLowerCase();
+    if (code === 'n/a') return 0;
+
+    const classroomStudents = Object.values(usersDb).filter(
+      (u) => u.role === 'Student' && (u.classroomCode || '').trim().toLowerCase() === code
+    );
+
+    if (classroomStudents.length === 0) return 0;
+
+    let studentAveragesSum = 0;
+    let countedStudents = 0;
+
+    classroomStudents.forEach((st) => {
+      const entries = Object.values(st.entries || {}).sort((a, b) => a.date.localeCompare(b.date));
+      if (entries.length > 0) {
+        const last7 = entries.slice(-7);
+        const validValues = last7.map((e) => e[key]).filter((v): v is number => v !== undefined);
+        if (validValues.length > 0) {
+          const stSum = validValues.reduce((acc, curr) => acc + curr, 0);
+          studentAveragesSum += stSum / validValues.length;
+          countedStudents++;
+        }
+      }
+    });
+
+    if (countedStudents === 0) return 0;
+
+    const avg = studentAveragesSum / countedStudents;
+    return Math.round(avg * 10) / 10;
+  };
+
   const get28DayGrid = () => {
     const result: { dateStr: string; entry?: DailyEntry }[] = [];
     const todayESTStr = getTodayESTISO();
@@ -549,10 +449,11 @@ export default function App() {
     return result;
   };
 
+  // EDIT 16: Yellow circle is made larger to closely match check and X size
   const renderStatusIcon = (key: HabitKey, avg: number, grade: string) => {
     const status = getHabitColor(key, avg, grade);
     if (status === 'green') return <span style={{ color: 'green', fontWeight: 'bold' }}>✓</span>;
-    if (status === 'yellow') return <span style={{ color: '#D4AC0D', fontWeight: 'bold' }}>●</span>;
+    if (status === 'yellow') return <span style={{ color: '#D4AC0D', fontWeight: 'bold', fontSize: '1.4em', lineHeight: '1' }}>●</span>;
     return <span style={{ color: 'red', fontWeight: 'bold' }}>✕</span>;
   };
 
@@ -580,16 +481,6 @@ export default function App() {
       maxHeight: '280px',
       objectFit: 'contain',
       margin: '15px auto',
-      display: 'block'
-    },
-    // UPDATED: Fixed sizing rules so top-left logo displays cleanly
-    navLogoImage: {
-      width: '100%',
-      maxWidth: '120px',
-      height: 'auto',
-      maxHeight: '120px',
-      objectFit: 'contain',
-      margin: '0 auto 20px auto',
       display: 'block'
     },
     headerLogoImage: {
@@ -931,27 +822,40 @@ export default function App() {
     );
   }
 
-  // --- DASHBOARD WRAPPER (Home, Log, View) ---
+  // --- DASHBOARD WRAPPER ---
   const currentUserGrade = getCurrentUserGrade();
+  const currentUserClassroom = getCurrentUserClassroomCode();
   const habitsConfig = getHabitsConfig(currentUserGrade);
 
   return (
     <div style={styles.appContainer}>
       <div style={styles.dashboardLayout}>
         <div style={styles.sidebar}>
-<div style={{ width: '100%', display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
-  <img 
-    src={logo} 
-    alt="HealthyHabitsED Logo" 
-    style={{
-      maxWidth: '120px',
-      width: '100%',
-      height: 'auto',
-      display: 'block',
-      objectFit: 'contain'
-    }} 
-  />
-</div>
+          <div style={{ width: '100%', display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+            <img
+              src={logo}
+              alt="HealthyHabitsED Logo"
+              style={{
+                maxWidth: '120px',
+                width: '100%',
+                height: 'auto',
+                display: 'block',
+                objectFit: 'contain'
+              }}
+            />
+          </div>
+
+          {/* EDIT 16 Requirement: My Classroom Scorecard button at top */}
+          <button
+            style={{
+              ...styles.navButton,
+              ...(currentPage === 'classroom' ? styles.activeNavButton : {})
+            }}
+            onClick={() => setCurrentPage('classroom')}
+          >
+            My Classroom Scorecard
+          </button>
+
           <button
             style={{
               ...styles.navButton,
@@ -998,6 +902,10 @@ export default function App() {
           <div style={{ textAlign: 'left', marginBottom: '25px' }}>
             <img src={logo} alt="HealthyHabitsED Logo" style={styles.headerLogoImage} />
 
+            {/* EDIT 16 Requirement: Add My Classroom above My Grade */}
+            <div style={{ color: charBlack, fontFamily: manropeFont, fontSize: '16px' }}>
+              My Classroom: {currentUserClassroom}
+            </div>
             <div style={{ color: charBlack, fontFamily: manropeFont, fontSize: '16px' }}>
               My Grade: {currentUserGrade}
             </div>
@@ -1005,6 +913,41 @@ export default function App() {
               Today's Date: {getTodayESTFormatted()}
             </div>
           </div>
+
+          {/* EDIT 16 Requirement: My Classroom Scorecard Page */}
+          {currentPage === 'classroom' && (
+            <div style={{ textAlign: 'left', maxWidth: '700px' }}>
+              <h2 style={{ color: steelBlue, fontFamily: manropeFont }}>
+                My Classroom’s Healthy Habits Scorecard (Weekly Average)
+              </h2>
+
+              <table style={styles.logTable}>
+                <thead>
+                  <tr>
+                    <th style={styles.logTableHeaderCell}>Habit</th>
+                    <th style={styles.logTableHeaderCell}>Goal</th>
+                    <th style={styles.logTableHeaderCell}>Weekly Average</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {habitsConfig.map((h) => {
+                    const avg = getClassroomWeeklyAverage(h.key);
+                    return (
+                      <tr key={h.key}>
+                        <td style={styles.logTableCell}>
+                          {h.icon} {h.label}
+                        </td>
+                        <td style={styles.logTableCell}>{h.goal}</td>
+                        <td style={styles.logTableCell}>
+                          {avg} <span style={{ marginLeft: '10px' }}>{renderStatusIcon(h.key, avg, currentUserGrade)}</span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
 
           {/* Home / Weekly Scorecard */}
           {currentPage === 'home' && (
@@ -1112,9 +1055,10 @@ export default function App() {
                   onChange={(e) => setSelectedCategory(e.target.value as HabitKey)}
                   style={{ ...styles.inputBox, width: '240px', display: 'inline-block', margin: '0 15px 0 5px', color: charBlack }}
                 >
+                  {/* EDIT 16 Requirement: Only include the text before the comma */}
                   {habitsConfig.map((h) => (
                     <option key={h.key} value={h.key} style={{ color: charBlack }}>
-                      {h.label}, {h.goal}
+                      {h.label}
                     </option>
                   ))}
                 </select>
