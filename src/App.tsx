@@ -1,815 +1,1103 @@
 import React, { useState, useEffect } from 'react';
-import { db } from './firebase';
-import { collection, doc, setDoc, onSnapshot } from 'firebase/firestore';
+import logo from './assets/logo.png';
 
-// ==========================================
-// **TYPES & INTERFACES**
-// ==========================================
-type UserStatus = 'Student' | 'Teacher' | 'N/A';
+// --- Habit Types & Definitions ---
+export type HabitKey =
+  | 'sleep'
+  | 'physicalActivity'
+  | 'water'
+  | 'fruitsVeg'
+  | 'wholeFoods'
+  | 'upf'
+  | 'sugaryDrinks'
+  | 'mood';
 
-interface DailyLog {
-  date: string;
-  waterGlasses: number;
-  activityMinutes: number;
-  sleepHours: number;
-  wholeFoods: string;
-  ultraProcessed: string;
-  notes: string;
+export interface HabitConfig {
+  key: HabitKey;
+  label: string;
+  icon: string;
+  selections: number[];
+  selectionLabels?: Record<number, string>;
+  goal: string;
 }
 
-interface StudentScore {
-  id: string;
-  name: string;
-  score: number;
-  waterAvg: number;
-  activityAvg: number;
-  sleepAvg: number;
-  streakDays: number;
+interface DailyEntry {
+  date: string; // YYYY-MM-DD
+  sleep?: number;
+  physicalActivity?: number;
+  water?: number;
+  fruitsVeg?: number;
+  wholeFoods?: number;
+  upf?: number;
+  sugaryDrinks?: number;
+  mood?: number;
 }
 
-interface SurveyResponse {
-  studentUsername: string;
+interface UserData {
+  username: string;
+  role: 'Teacher' | 'Student';
+  grade?: 'K - 5th' | '6th - 8th' | '9th - 12th' | '';
   classroomCode: string;
-  hardestHabit: string;
-  difficulties: string[];
-  resourcesOfInterest: string[];
-  effects: string[];
-  wantsMoreTips: string;
+  entries: Record<string, DailyEntry>;
 }
 
 export default function App() {
-  // ==========================================
-  // **STATE MANAGEMENT**
-  // ==========================================
-  const [activePage, setActivePage] = useState<string>('My Classroom Scorecard');
-  const [userStatus, setUserStatus] = useState<UserStatus>('Teacher');
-  const [classroomCode] = useState<string>('testavg9');
-  const [userGrade] = useState<string>('9th - 12th');
-  const [todayDate] = useState<string>('07/28/2026');
-  const [selectedHistoryDate, setSelectedHistoryDate] = useState<string>('07/28/2026');
+  // Navigation & Auth State
+  const [currentPage, setCurrentPage] = useState<'login' | 'register' | 'classroom' | 'home' | 'log' | 'view'>('login');
+  const [currentUser, setCurrentUser] = useState<string | null>(null);
 
-  // Daily Log Form State
-  const [dailyLog, setDailyLog] = useState<DailyLog>({
-    date: '07/28/2026',
-    waterGlasses: 8,
-    activityMinutes: 45,
-    sleepHours: 8,
-    wholeFoods: '80+',
-    ultraProcessed: '0',
-    notes: 'Felt energetic and stayed hydrated all day!',
+  // Form Inputs - Login
+  const [loginUsername, setLoginUsername] = useState('');
+  const [loginError, setLoginError] = useState('');
+
+  // Form Inputs - Registration
+  const [regRole, setRegRole] = useState<'Teacher' | 'Student' | ''>('');
+  const [regGrade, setRegGrade] = useState<'K - 5th' | '6th - 8th' | '9th - 12th' | ''>('');
+  const [regUsername, setRegUsername] = useState('');
+  const [regClassroomCode, setRegClassroomCode] = useState('');
+
+  // Registration Validation Errors
+  const [regFormatError, setRegFormatError] = useState(false);
+  const [regTakenError, setRegTakenError] = useState(false);
+  const [roleError, setRoleError] = useState(false);
+  const [gradeError, setGradeError] = useState(false);
+  const [codeEmptyError, setCodeEmptyError] = useState(false);
+  const [codeCustomError, setCodeCustomError] = useState('');
+  const [generalRegError, setGeneralRegError] = useState(false);
+
+  // Log Data Inputs State
+  const [logFormValues, setLogFormValues] = useState<Record<HabitKey, number>>({
+    sleep: 0,
+    physicalActivity: 0,
+    water: 0,
+    fruitsVeg: 0,
+    wholeFoods: 0,
+    upf: 0,
+    sugaryDrinks: 0,
+    mood: 1,
   });
+  const [logSuccessMsg, setLogSuccessMsg] = useState('');
 
-  // Log History State (Initialized with Mock Data & Synced to Cloud)
-  const [logHistory, setLogHistory] = useState<Record<string, DailyLog>>({
-    '07/28/2026': {
-      date: '07/28/2026',
-      waterGlasses: 8,
-      activityMinutes: 45,
-      sleepHours: 8,
-      wholeFoods: '80+',
-      ultraProcessed: '0',
-      notes: 'Felt energetic and stayed hydrated all day!',
-    },
-    '07/27/2026': {
-      date: '07/27/2026',
-      waterGlasses: 6,
-      activityMinutes: 30,
-      sleepHours: 7,
-      wholeFoods: '60',
-      ultraProcessed: '10',
-      notes: 'Busy afternoon with soccer practice.',
-    },
-    '07/26/2026': {
-      date: '07/26/2026',
-      waterGlasses: 7,
-      activityMinutes: 60,
-      sleepHours: 9,
-      wholeFoods: '70',
-      ultraProcessed: '20',
-      notes: 'Great weekend rest day.',
-    },
-  });
+  // View Data State
+  const [selectedCategory, setSelectedCategory] = useState<HabitKey>('sleep');
 
-  // Student Survey Form State
-  const [studentSurvey, setStudentSurvey] = useState<SurveyResponse>({
-    studentUsername: 'Current Student',
-    classroomCode: classroomCode,
-    hardestHabit: '',
-    difficulties: [],
-    resourcesOfInterest: [],
-    effects: [],
-    wantsMoreTips: '',
-  });
+  // Database stored in LocalStorage
+  const [usersDb, setUsersDb] = useState<Record<string, UserData>>({});
 
-  // Classroom Mock Student List
-  const [classroomStudents] = useState<StudentScore[]>([
-    { id: '1', name: 'Alex M.', score: 94, waterAvg: 8.2, activityAvg: 50, sleepAvg: 8.1, streakDays: 14 },
-    { id: '2', name: 'Jordan T.', score: 88, waterAvg: 7.5, activityAvg: 40, sleepAvg: 7.8, streakDays: 10 },
-    { id: '3', name: 'Taylor S.', score: 85, waterAvg: 7.0, activityAvg: 35, sleepAvg: 7.5, streakDays: 7 },
-    { id: '4', name: 'Sam K.', score: 81, waterAvg: 6.8, activityAvg: 30, sleepAvg: 7.2, streakDays: 5 },
-    { id: '5', name: 'Morgan L.', score: 76, waterAvg: 6.0, activityAvg: 25, sleepAvg: 6.8, streakDays: 3 },
-  ]);
-
-  // Classroom Survey Data State (Initialized with Mock Data & Synced to Cloud)
-  const [surveyData, setSurveyData] = useState<SurveyResponse[]>([
-    {
-      studentUsername: 'student1',
-      classroomCode: 'testavg9',
-      hardestHabit: 'Getting enough sleep',
-      difficulties: ["I don't have enough time", "I have too much homework or other responsibilities"],
-      resourcesOfInterest: ['Free student meals', 'Parks, playgrounds, and trails'],
-      effects: ['I can focus better in class'],
-      wantsMoreTips: 'Yes',
-    },
-    {
-      studentUsername: 'student2',
-      classroomCode: 'testavg9',
-      hardestHabit: 'Drinking enough water',
-      difficulties: ["I don't have enough time"],
-      resourcesOfInterest: ['Homework help or tutoring'],
-      effects: ['I have more energy'],
-      wantsMoreTips: 'Maybe later',
-    },
-    {
-      studentUsername: 'student3',
-      classroomCode: 'testavg9',
-      hardestHabit: 'Being physically active',
-      difficulties: ["I don't have a safe place to be active"],
-      resourcesOfInterest: ['Recreation centers', 'Youth sports'],
-      effects: ['I feel stronger or more active'],
-      wantsMoreTips: 'Yes',
-    },
-  ]);
-
-  // Dropdown Options
-  const wholeFoodsOptions = ['0', '10', '20', '30', '40', '50', '60', '70', '80+'];
-  const ultraProcessedOptions = ['0', '10', '20', '30', '40+'];
-
-  // ==========================================
-  // **FIRESTORE REAL-TIME SYNC**
-  // ==========================================
   useEffect(() => {
-    // 1. Listen for Daily Logs updates from Firebase Cloud
-    const unsubscribeLogs = onSnapshot(collection(db, 'dailyLogs'), (snapshot) => {
-      const fetchedLogs: Record<string, DailyLog> = {};
-      snapshot.forEach((docItem) => {
-        const data = docItem.data() as DailyLog;
-        fetchedLogs[data.date] = data;
-      });
-      if (Object.keys(fetchedLogs).length > 0) {
-        setLogHistory((prev) => ({ ...prev, ...fetchedLogs }));
+    const saved = localStorage.getItem('healthy_habits_users');
+    if (saved) {
+      try {
+        setUsersDb(JSON.parse(saved));
+      } catch (e) {
+        console.error('Failed to parse local storage', e);
       }
-    });
-
-    // 2. Listen for Survey updates from Firebase Cloud
-    const unsubscribeSurveys = onSnapshot(collection(db, 'surveys'), (snapshot) => {
-      const fetchedSurveys: SurveyResponse[] = [];
-      snapshot.forEach((docItem) => {
-        fetchedSurveys.push(docItem.data() as SurveyResponse);
-      });
-      if (fetchedSurveys.length > 0) {
-        setSurveyData((prev) => {
-          // Combine local mock data with remote cloud data, avoiding duplicate usernames if present
-          const existingUsernames = new Set(prev.map(s => s.studentUsername));
-          const newEntries = fetchedSurveys.filter(s => !existingUsernames.has(s.studentUsername));
-          return [...prev, ...newEntries];
-        });
-      }
-    });
-
-    return () => {
-      unsubscribeLogs();
-      unsubscribeSurveys();
-    };
+    }
   }, []);
 
-  // ==========================================
-  // **EVENT HANDLERS & LOGIC FUNCTIONS**
-  // ==========================================
-  const handleSaveDailyLog = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      // Create a formatted document key for Firestore (e.g. "07-28-2026")
-      const docId = dailyLog.date.replace(/\//g, '-');
-      
-      // Save directly to Cloud Firestore
-      await setDoc(doc(db, 'dailyLogs', docId), dailyLog);
+  const saveDb = (updatedDb: Record<string, UserData>) => {
+    setUsersDb(updatedDb);
+    localStorage.setItem('healthy_habits_users', JSON.stringify(updatedDb));
+  };
 
-      // Update local state immediately
-      setLogHistory((prev) => ({
-        ...prev,
-        [dailyLog.date]: { ...dailyLog },
-      }));
-      
-      alert('Daily Log Saved to Cloud Successfully!');
-    } catch (error) {
-      console.error('Error saving daily log to Cloud Firestore:', error);
-      alert('Failed to save log to Cloud. Please check connection.');
+  // Helper: Get EST ISO Date String (YYYY-MM-DD)
+  const getTodayESTISO = (): string => {
+    const now = new Date();
+    return now.toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+  };
+
+  // Helper: Get EST Formatted Date String (MM/DD/YYYY)
+  const getTodayESTFormatted = (): string => {
+    const now = new Date();
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/New_York',
+      month: '2-digit',
+      day: '2-digit',
+      year: 'numeric'
+    }).formatToParts(now);
+
+    let mm = '', dd = '', yyyy = '';
+    for (const p of parts) {
+      if (p.type === 'month') mm = p.value;
+      if (p.type === 'day') dd = p.value;
+      if (p.type === 'year') yyyy = p.value;
+    }
+    return `${mm}/${dd}/${yyyy}`;
+  };
+
+  // Helper: Convert YYYY-MM-DD to MM/DD/YYYY
+  const formatDateToMDY = (dateStr: string): string => {
+    if (!dateStr) return '';
+    const [year, month, day] = dateStr.split('-');
+    return `${month}/${day}/${year}`;
+  };
+
+  // Helper: Get Grade for Current User
+  const getCurrentUserGrade = (): string => {
+    if (!currentUser || !usersDb[currentUser]) return 'N/A';
+    const user = usersDb[currentUser];
+    if (user.role === 'Teacher' && user.grade) {
+      return user.grade;
+    }
+
+    const userCode = (user.classroomCode || '').trim().toLowerCase();
+    const teacher = Object.values(usersDb).find(
+      (u) => u.role === 'Teacher' && (u.classroomCode || '').trim().toLowerCase() === userCode
+    );
+    return teacher?.grade || user.grade || 'N/A';
+  };
+
+  // Helper: Get Classroom Code for Current User
+  const getCurrentUserClassroomCode = (): string => {
+    if (!currentUser || !usersDb[currentUser]) return 'N/A';
+    return usersDb[currentUser].classroomCode || 'N/A';
+  };
+
+  // Grade-adaptive Habit Configurations
+  const getHabitsConfig = (grade: string): HabitConfig[] => {
+    if (grade === 'K - 5th') {
+      return [
+        { key: 'sleep', label: 'Sleep', icon: '💤', selections: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], selectionLabels: { 12: '12+' }, goal: '9 - 12 hours / night' },
+        { key: 'physicalActivity', label: 'Physical Activity', icon: '🏃', selections: [0, 15, 30, 45, 60], selectionLabels: { 60: '60+' }, goal: '60+ minutes / day' },
+        { key: 'water', label: 'Water', icon: '💧', selections: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], selectionLabels: { 9: '9+' }, goal: '6 - 9 cups / day' },
+        { key: 'fruitsVeg', label: 'Fruits & Vegetables', icon: '🍎', selections: [0, 1, 2, 3, 4, 5], selectionLabels: { 5: '5+' }, goal: '>= 5 servings / day' },
+        { key: 'wholeFoods', label: 'Whole Foods', icon: '🥗', selections: [0, 10, 20, 30, 40, 50, 60, 70, 80], selectionLabels: { 80: '80%+' }, goal: '>= 80% / day' },
+        { key: 'upf', label: 'Ultra-Processed Foods', icon: '🍔', selections: [0, 10, 20, 30, 40], selectionLabels: { 40: '40%+' }, goal: '<= 20% / day' },
+        { key: 'sugaryDrinks', label: 'Sugary Drinks', icon: '🥤', selections: [0, 1], selectionLabels: { 1: '1+' }, goal: '0 drinks / day' },
+        { key: 'mood', label: 'Mood', icon: '⭐', selections: [1, 2, 3], goal: '3 stars' },
+      ];
+    } else if (grade === '6th - 8th') {
+      return [
+        { key: 'sleep', label: 'Sleep', icon: '💤', selections: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], selectionLabels: { 10: '10+' }, goal: '8 - 10 hours / night' },
+        { key: 'physicalActivity', label: 'Physical Activity', icon: '🏃', selections: [0, 15, 30, 45, 60], selectionLabels: { 60: '60+' }, goal: '60+ minutes / day' },
+        { key: 'water', label: 'Water', icon: '💧', selections: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], selectionLabels: { 11: '11+' }, goal: '8 - 11 cups / day' },
+        { key: 'fruitsVeg', label: 'Fruits & Vegetables', icon: '🍎', selections: [0, 1, 2, 3, 4, 5], selectionLabels: { 5: '5+' }, goal: '>= 5 servings / day' },
+        { key: 'wholeFoods', label: 'Whole Foods', icon: '🥗', selections: [0, 10, 20, 30, 40, 50, 60, 70, 80], selectionLabels: { 80: '80%+' }, goal: '>= 80% / day' },
+        { key: 'upf', label: 'Ultra-Processed Foods', icon: '🍔', selections: [0, 10, 20, 30, 40], selectionLabels: { 40: '40%+' }, goal: '<= 20% / day' },
+        { key: 'sugaryDrinks', label: 'Sugary Drinks', icon: '🥤', selections: [0, 1, 2], selectionLabels: { 2: '2+' }, goal: '0 - 1 drinks / day' },
+        { key: 'mood', label: 'Mood', icon: '⭐', selections: [1, 2, 3], goal: '3 stars' },
+      ];
+    } else {
+      return [
+        { key: 'sleep', label: 'Sleep', icon: '💤', selections: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], selectionLabels: { 10: '10+' }, goal: '8 - 10 hours / night' },
+        { key: 'physicalActivity', label: 'Physical Activity', icon: '🏃', selections: [0, 15, 30, 45, 60], selectionLabels: { 60: '60+' }, goal: '60+ minutes / day' },
+        { key: 'water', label: 'Water', icon: '💧', selections: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13], selectionLabels: { 13: '13+' }, goal: '9 - 13 cups / day' },
+        { key: 'fruitsVeg', label: 'Fruits & Vegetables', icon: '🍎', selections: [0, 1, 2, 3, 4, 5], selectionLabels: { 5: '5+' }, goal: '>= 5 servings / day' },
+        { key: 'wholeFoods', label: 'Whole Foods', icon: '🥗', selections: [0, 10, 20, 30, 40, 50, 60, 70, 80], selectionLabels: { 80: '80%+' }, goal: '>= 80% / day' },
+        { key: 'upf', label: 'Ultra-Processed Foods', icon: '🍔', selections: [0, 10, 20, 30, 40], selectionLabels: { 40: '40%+' }, goal: '<= 20% / day' },
+        { key: 'sugaryDrinks', label: 'Sugary Drinks', icon: '🥤', selections: [0, 1, 2], selectionLabels: { 2: '2+' }, goal: '0 - 1 drinks / day' },
+        { key: 'mood', label: 'Mood', icon: '⭐', selections: [1, 2, 3], goal: '3 stars' },
+      ];
     }
   };
 
-  const handleCheckboxChange = (field: keyof SurveyResponse, value: string) => {
-    setStudentSurvey((prev) => {
-      const currentArr = (prev[field] as string[]) || [];
-      const updatedArr = currentArr.includes(value)
-        ? currentArr.filter((item) => item !== value)
-        : [...currentArr, value];
-      return { ...prev, [field]: updatedArr };
-    });
-  };
-
-  const handleSurveySubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const finalSurvey = { ...studentSurvey, classroomCode };
-    
-    try {
-      // Save directly to Cloud Firestore using a unique ID timestamp
-      const timestampDocId = `survey_${Date.now()}`;
-      await setDoc(doc(db, 'surveys', timestampDocId), finalSurvey);
-
-      // Update local state immediately
-      setSurveyData((prev) => [...prev, finalSurvey]);
-
-      alert('Thank you! Your survey response has been submitted to the Cloud.');
-    } catch (error) {
-      console.error('Error saving survey to Cloud Firestore:', error);
-      alert('Failed to submit survey to Cloud.');
-    }
-  };
-
-  const getAnswerCount = (category: keyof SurveyResponse, answerText: string) => {
-    return surveyData.filter((resp) => {
-      if (resp.classroomCode !== classroomCode) return false;
-      const val = resp[category];
-      if (Array.isArray(val)) {
-        return val.includes(answerText);
+  // Color Coding Helper
+  const getHabitColor = (key: HabitKey, val: number, grade: string): 'red' | 'yellow' | 'green' => {
+    if (grade === 'K - 5th') {
+      switch (key) {
+        case 'sleep':
+          return val >= 9 ? 'green' : val === 8 ? 'yellow' : 'red';
+        case 'physicalActivity':
+          return val >= 60 ? 'green' : val === 45 ? 'yellow' : 'red';
+        case 'water':
+          return val >= 6 ? 'green' : val === 5 ? 'yellow' : 'red';
+        case 'fruitsVeg':
+          return val >= 5 ? 'green' : val === 4 ? 'yellow' : 'red';
+        case 'wholeFoods':
+          return val >= 80 ? 'green' : val === 70 ? 'yellow' : 'red';
+        case 'upf':
+          return val <= 20 ? 'green' : val === 30 ? 'yellow' : 'red';
+        case 'sugaryDrinks':
+          return val === 0 ? 'green' : 'red';
+        case 'mood':
+          return val >= 3 ? 'green' : val === 2 ? 'yellow' : 'red';
       }
-      return val === answerText;
-    }).length;
+    } else if (grade === '6th - 8th') {
+      switch (key) {
+        case 'sleep':
+          return val >= 8 ? 'green' : val === 7 ? 'yellow' : 'red';
+        case 'physicalActivity':
+          return val >= 60 ? 'green' : val === 45 ? 'yellow' : 'red';
+        case 'water':
+          return val >= 8 ? 'green' : val === 7 ? 'yellow' : 'red';
+        case 'fruitsVeg':
+          return val >= 5 ? 'green' : val === 4 ? 'yellow' : 'red';
+        case 'wholeFoods':
+          return val >= 80 ? 'green' : val === 70 ? 'yellow' : 'red';
+        case 'upf':
+          return val <= 20 ? 'green' : val === 30 ? 'yellow' : 'red';
+        case 'sugaryDrinks':
+          return val <= 1 ? 'green' : 'red';
+        case 'mood':
+          return val >= 3 ? 'green' : val === 2 ? 'yellow' : 'red';
+      }
+    } else {
+      switch (key) {
+        case 'sleep':
+          return val >= 8 ? 'green' : val === 7 ? 'yellow' : 'red';
+        case 'physicalActivity':
+          return val >= 60 ? 'green' : val === 45 ? 'yellow' : 'red';
+        case 'water':
+          return val >= 9 ? 'green' : val === 8 ? 'yellow' : 'red';
+        case 'fruitsVeg':
+          return val >= 5 ? 'green' : val === 4 ? 'yellow' : 'red';
+        case 'wholeFoods':
+          return val >= 80 ? 'green' : val === 70 ? 'yellow' : 'red';
+        case 'upf':
+          return val <= 20 ? 'green' : val === 30 ? 'yellow' : 'red';
+        case 'sugaryDrinks':
+          return val <= 1 ? 'green' : 'red';
+        case 'mood':
+          return val >= 3 ? 'green' : val === 2 ? 'yellow' : 'red';
+      }
+    }
   };
 
-  // ==========================================
-  // **NAVIGATION MENU ITEMS**
-  // ==========================================
-  const navButtons = [
-    { label: 'My Classroom Scorecard', icon: '🏫' },
-    { label: 'My Scorecard', icon: '👤' },
-    { label: 'My Daily Log', icon: '👤' },
-    { label: 'My Daily View', icon: '👤' },
-    { label: 'Learning Center', icon: '📖' },
-    { label: 'Community Resources', icon: '📖' },
-    { label: 'Survey', icon: '📖' },
-    ...(userStatus === 'Teacher' ? [{ label: 'Survey Results', icon: '📖' }] : []),
-  ];
+  // --- Handlers ---
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = (loginUsername || '').trim();
+    if (usersDb[trimmed]) {
+      setCurrentUser(trimmed);
+      setLoginError('');
+      setLoginUsername('');
+      setCurrentPage('home');
+    } else {
+      setLoginError('The username you entered has not yet been registered. Try another username or register.');
+      setLoginUsername('');
+    }
+  };
 
-  // ==========================================
-  // **RENDER UI (JSX)**
-  // ==========================================
-  return (
-    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'Manrope, Inter, sans-serif', backgroundColor: '#FCFAF5' }}>
-      
-      {/* ==========================================
-          **LEFT NAVIGATION BAR**
-          ========================================== */}
-      <aside style={{ width: '260px', backgroundColor: '#3E6F9B', padding: '20px', color: '#FFF', display: 'flex', flexDirection: 'column' }}>
-        
-        {/* Header Branding Logo */}
-        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-          <div style={{ fontSize: '20px', fontWeight: 'bold', letterSpacing: '1px', padding: '10px 0' }}>
-            HEALTHY HABITS ED
+  const handleRegister = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmedUser = (regUsername || '').trim();
+    const trimmedCode = (regClassroomCode || '').trim();
+
+    setRegFormatError(false);
+    setRegTakenError(false);
+    setRoleError(false);
+    setGradeError(false);
+    setCodeEmptyError(false);
+    setCodeCustomError('');
+    setGeneralRegError(false);
+
+    let hasError = false;
+
+    if (!regRole) {
+      setRoleError(true);
+      hasError = true;
+    }
+
+    if (regRole === 'Teacher' && !regGrade) {
+      setGradeError(true);
+      hasError = true;
+    }
+
+    const isAlphanumeric = /^[a-zA-Z0-9]{6,12}$/.test(trimmedUser);
+    if (!trimmedUser || !isAlphanumeric) {
+      setRegFormatError(true);
+      hasError = true;
+    }
+    if (usersDb[trimmedUser]) {
+      setRegTakenError(true);
+      hasError = true;
+    }
+
+    if (!trimmedCode) {
+      setCodeEmptyError(true);
+      hasError = true;
+    } else {
+      if (regRole === 'Teacher') {
+        const existingCodeTeacher = Object.values(usersDb).some(
+          (u) => (u.classroomCode || '').trim().toLowerCase() === trimmedCode.toLowerCase()
+        );
+        if (existingCodeTeacher) {
+          setCodeCustomError('That classroom code has already been registered. Please select a different classroom code.');
+          hasError = true;
+        }
+      } else if (regRole === 'Student') {
+        const teacherWithCode = Object.values(usersDb).find(
+          (u) => u.role === 'Teacher' && (u.classroomCode || '').trim().toLowerCase() === trimmedCode.toLowerCase()
+        );
+        if (!teacherWithCode) {
+          setCodeCustomError('Please re-enter your classroom code or check with your teacher. The classroom code indicated has not yet been registered and is not currently associated with a teacher’s classroom.');
+          hasError = true;
+        }
+      }
+    }
+
+    if (hasError) {
+      setGeneralRegError(true);
+      return;
+    }
+
+    const newUser: UserData = {
+      username: trimmedUser,
+      role: regRole as 'Teacher' | 'Student',
+      grade: regRole === 'Teacher' ? regGrade : '',
+      classroomCode: trimmedCode,
+      entries: {}
+    };
+
+    const updated = {
+      ...usersDb,
+      [trimmedUser]: newUser
+    };
+
+    saveDb(updated);
+    setCurrentUser(trimmedUser);
+    setRegUsername('');
+    setRegRole('');
+    setRegGrade('');
+    setRegClassroomCode('');
+    setCurrentPage('home');
+  };
+
+  const handleLogSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser) return;
+
+    const todayISO = getTodayESTISO();
+    const user = usersDb[currentUser];
+
+    const todayEntry: DailyEntry = { date: todayISO, ...logFormValues };
+
+    const newEntries = { ...(user.entries || {}), [todayISO]: todayEntry };
+
+    const sortedKeys = Object.keys(newEntries).sort();
+    if (sortedKeys.length > 28) {
+      const keysToRemove = sortedKeys.slice(0, sortedKeys.length - 28);
+      keysToRemove.forEach((k) => delete newEntries[k]);
+    }
+
+    const updatedDb = {
+      ...usersDb,
+      [currentUser]: { ...user, entries: newEntries }
+    };
+    saveDb(updatedDb);
+    setLogSuccessMsg('Data logged successfully!');
+    setTimeout(() => setLogSuccessMsg(''), 3000);
+  };
+
+  // --- Calculation Helpers ---
+  const getUserEntries = (): DailyEntry[] => {
+    if (!currentUser || !usersDb[currentUser]) return [];
+    const entriesObj = usersDb[currentUser].entries || {};
+    return Object.values(entriesObj).sort((a, b) => a.date.localeCompare(b.date));
+  };
+
+  const getWeeklyAverage = (key: HabitKey): number => {
+    const entries = getUserEntries();
+    if (entries.length === 0) return 0;
+    const last7 = entries.slice(-7);
+    const validValues = last7.map((e) => e[key]).filter((v): v is number => v !== undefined);
+    if (validValues.length === 0) return 0;
+    const sum = validValues.reduce((acc, curr) => acc + curr, 0);
+    return Math.round((sum / validValues.length) * 10) / 10;
+  };
+
+  // EDIT 16: Classroom Weekly Average calculation
+  const getClassroomWeeklyAverage = (key: HabitKey): number => {
+    const code = getCurrentUserClassroomCode().trim().toLowerCase();
+    if (code === 'n/a') return 0;
+
+    const classroomStudents = Object.values(usersDb).filter(
+      (u) => u.role === 'Student' && (u.classroomCode || '').trim().toLowerCase() === code
+    );
+
+    if (classroomStudents.length === 0) return 0;
+
+    let studentAveragesSum = 0;
+    let countedStudents = 0;
+
+    classroomStudents.forEach((st) => {
+      const entries = Object.values(st.entries || {}).sort((a, b) => a.date.localeCompare(b.date));
+      if (entries.length > 0) {
+        const last7 = entries.slice(-7);
+        const validValues = last7.map((e) => e[key]).filter((v): v is number => v !== undefined);
+        if (validValues.length > 0) {
+          const stSum = validValues.reduce((acc, curr) => acc + curr, 0);
+          studentAveragesSum += stSum / validValues.length;
+          countedStudents++;
+        }
+      }
+    });
+
+    if (countedStudents === 0) return 0;
+
+    const avg = studentAveragesSum / countedStudents;
+    return Math.round(avg * 10) / 10;
+  };
+
+  const get28DayGrid = () => {
+    const result: { dateStr: string; entry?: DailyEntry }[] = [];
+    const todayESTStr = getTodayESTISO();
+    const [yyyy, mm, dd] = todayESTStr.split('-').map(Number);
+    const todayESTDate = new Date(yyyy, mm - 1, dd);
+
+    for (let i = 27; i >= 0; i--) {
+      const d = new Date(todayESTDate);
+      d.setDate(d.getDate() - i);
+      const isoY = d.getFullYear();
+      const isoM = String(d.getMonth() + 1).padStart(2, '0');
+      const isoD = String(d.getDate()).padStart(2, '0');
+      const iso = `${isoY}-${isoM}-${isoD}`;
+
+      const entry = currentUser && usersDb[currentUser] && usersDb[currentUser].entries ? usersDb[currentUser].entries[iso] : undefined;
+      result.push({ dateStr: iso, entry });
+    }
+    return result;
+  };
+
+  // EDIT 16: Yellow circle is made larger to closely match check and X size
+  const renderStatusIcon = (key: HabitKey, avg: number, grade: string) => {
+    const status = getHabitColor(key, avg, grade);
+    if (status === 'green') return <span style={{ color: 'green', fontWeight: 'bold' }}>✓</span>;
+    if (status === 'yellow') return <span style={{ color: '#D4AC0D', fontWeight: 'bold', fontSize: '1.4em', lineHeight: '1' }}>●</span>;
+    return <span style={{ color: 'red', fontWeight: 'bold' }}>✕</span>;
+  };
+
+  // --- Theme Colors & Fonts ---
+  const steelBlue = '#3E6F9B';
+  const cream = '#FCFAF5';
+  const charBlack = '#202124';
+  const manropeFont = "'Manrope', sans-serif";
+
+  const styles: Record<string, React.CSSProperties> = {
+    appContainer: {
+      fontFamily: manropeFont,
+      backgroundColor: cream,
+      color: charBlack,
+      minHeight: '100vh',
+      display: 'flex',
+      flexDirection: 'column'
+    },
+    centerHeader: {
+      textAlign: 'center',
+      marginBottom: '20px'
+    },
+    mainLogoImage: {
+      maxWidth: '440px',
+      maxHeight: '280px',
+      objectFit: 'contain',
+      margin: '15px auto',
+      display: 'block'
+    },
+    headerLogoImage: {
+      maxWidth: '440px',
+      maxHeight: '270px',
+      objectFit: 'contain',
+      margin: '0 0 5px 0',
+      display: 'block'
+    },
+    authContainer: {
+      width: '420px',
+      margin: '0 auto',
+      textAlign: 'left'
+    },
+    sectionHeadingBlue: {
+      fontFamily: manropeFont,
+      fontSize: '18px',
+      fontWeight: 'bold',
+      color: steelBlue,
+      marginTop: '25px',
+      marginBottom: '6px'
+    },
+    inputBox: {
+      width: '100%',
+      padding: '10px',
+      margin: '6px 0',
+      fontFamily: manropeFont,
+      fontSize: '14px',
+      boxSizing: 'border-box'
+    },
+    button: {
+      width: '100%',
+      backgroundColor: steelBlue,
+      color: '#FFFFFF',
+      border: 'none',
+      padding: '10px',
+      fontFamily: manropeFont,
+      fontSize: '16px',
+      fontWeight: 600,
+      cursor: 'pointer',
+      marginTop: '15px'
+    },
+    linkText: {
+      marginTop: '15px',
+      color: charBlack,
+      fontFamily: manropeFont,
+      fontSize: '14px'
+    },
+    linkAnchor: {
+      color: steelBlue,
+      cursor: 'pointer',
+      textDecoration: 'underline',
+      fontFamily: manropeFont
+    },
+    dashboardLayout: {
+      display: 'flex',
+      flex: 1,
+      minHeight: '100vh'
+    },
+    sidebar: {
+      width: '220px',
+      backgroundColor: steelBlue,
+      color: '#FFFFFF',
+      padding: '20px 10px',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center'
+    },
+    navButton: {
+      width: '100%',
+      backgroundColor: cream,
+      color: charBlack,
+      border: '1px solid transparent',
+      padding: '10px',
+      margin: '8px 0',
+      cursor: 'pointer',
+      fontFamily: manropeFont,
+      fontSize: '15px',
+      fontWeight: 600,
+      textAlign: 'center',
+      borderRadius: '4px',
+      transition: 'all 0.2s ease-in-out'
+    },
+    activeNavButton: {
+      backgroundColor: '#EAE5D9',
+      color: steelBlue,
+      border: `2px solid ${steelBlue}`,
+      fontWeight: 'bold',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.15)'
+    },
+    mainContent: {
+      flex: 1,
+      backgroundColor: cream,
+      padding: '30px',
+      color: charBlack
+    },
+    gridTable: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(7, 1fr)',
+      gap: '8px',
+      marginTop: '20px'
+    },
+    gridCell: {
+      border: '1px solid #ccc',
+      padding: '10px 5px',
+      textAlign: 'center',
+      borderRadius: '4px',
+      minHeight: '60px',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+      fontSize: '13px',
+      fontFamily: manropeFont
+    },
+    logTable: {
+      width: '100%',
+      borderCollapse: 'collapse',
+      marginTop: '15px',
+      textAlign: 'left'
+    },
+    logTableCell: {
+      padding: '10px 12px',
+      textAlign: 'left',
+      fontFamily: manropeFont,
+      color: charBlack,
+      fontSize: '15px'
+    },
+    logTableHeaderCell: {
+      padding: '10px 12px',
+      textAlign: 'left',
+      fontFamily: manropeFont,
+      color: steelBlue,
+      fontWeight: 'bold',
+      fontSize: '16px'
+    }
+  };
+
+  // --- LOGIN PAGE ---
+  if (currentPage === 'login') {
+    return (
+      <div style={styles.appContainer}>
+        <div style={{ padding: '40px 20px' }}>
+          <div style={styles.centerHeader}>
+            <img src={logo} alt="HealthyHabitsED Logo" style={styles.mainLogoImage} />
+          </div>
+
+          <div style={styles.authContainer}>
+            <h2 style={{ color: charBlack, marginBottom: '5px', fontFamily: manropeFont }}>Login</h2>
+
+            <form onSubmit={handleLogin}>
+              <input
+                type="text"
+                placeholder="username"
+                value={loginUsername}
+                onChange={(e) => setLoginUsername(e.target.value)}
+                style={styles.inputBox}
+              />
+
+              {loginError && (
+                <div style={{ color: 'red', fontSize: '13px', marginTop: '4px', fontFamily: manropeFont }}>
+                  {loginError}
+                </div>
+              )}
+
+              <button type="submit" style={styles.button}>
+                Login
+              </button>
+            </form>
+
+            <div style={styles.linkText}>
+              Don’t have an account?{' '}
+              <span
+                style={styles.linkAnchor}
+                onClick={() => {
+                  setLoginError('');
+                  setCurrentPage('register');
+                }}
+              >
+                Register now.
+              </span>
+            </div>
           </div>
         </div>
+      </div>
+    );
+  }
 
-        {/* User Role Switcher for Testing */}
-        <div style={{ backgroundColor: 'rgba(255,255,255,0.1)', padding: '10px', borderRadius: '6px', marginBottom: '20px', fontSize: '12px' }}>
-          <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Toggle Role View:</label>
-          <select 
-            value={userStatus} 
-            onChange={(e) => setUserStatus(e.target.value as UserStatus)}
-            style={{ width: '100%', padding: '4px', borderRadius: '4px' }}
-          >
-            <option value="Teacher">Teacher</option>
-            <option value="Student">Student</option>
-          </select>
-        </div>
+  // --- REGISTRATION PAGE ---
+  if (currentPage === 'register') {
+    return (
+      <div style={styles.appContainer}>
+        <div style={{ padding: '40px 20px' }}>
+          <div style={styles.centerHeader}>
+            <img src={logo} alt="HealthyHabitsED Logo" style={styles.mainLogoImage} />
+          </div>
 
-        {/* Navigation Item List */}
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {navButtons.map((btn) => (
-            <button
-              key={btn.label}
-              onClick={() => setActivePage(btn.label)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '12px 15px',
-                borderRadius: '6px',
-                border: 'none',
-                backgroundColor: activePage === btn.label ? '#DCD3C1' : '#FCFAF5',
-                color: '#202124',
-                fontWeight: '600',
-                cursor: 'pointer',
-                textAlign: 'left',
-              }}
-            >
-              <span>{btn.label}</span>
-              <span style={{ fontSize: '16px' }}>{btn.icon}</span>
-            </button>
-          ))}
-        </nav>
-      </aside>
+          <div style={styles.authContainer}>
+            <h2 style={{ color: charBlack, marginBottom: '5px', fontFamily: manropeFont }}>Register</h2>
 
-      {/* ==========================================
-          **RIGHT MAIN CONTENT AREA**
-          ========================================== */}
-      <main style={{ flex: 1, padding: '30px', color: '#202124', overflowY: 'auto' }}>
-        
-        {/* Top Header Information Panel */}
-        <div style={{ fontSize: '13px', textAlign: 'left', marginBottom: '25px', lineHeight: '1.6', backgroundColor: '#FFF', padding: '12px 18px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-          <div><strong>My Status:</strong> {userStatus}</div>
-          <div><strong>My Classroom:</strong> {classroomCode}</div>
-          <div><strong>My Grade:</strong> {userGrade}</div>
-          <div><strong>Today's Date:</strong> {todayDate}</div>
-        </div>
-
-        {/* ==========================================
-            **PAGE 1: MY CLASSROOM SCORECARD**
-            ========================================== */}
-        {activePage === 'My Classroom Scorecard' && (
-          <div>
-            <h1 style={{ color: '#3E6F9B', fontSize: '24px', marginBottom: '10px' }}>My Classroom Scorecard</h1>
-            <p style={{ color: '#555', marginBottom: '20px' }}>Classroom Code: <strong>{classroomCode}</strong></p>
-
-            {/* Overview Metric Cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '15px', marginBottom: '30px' }}>
-              <div style={{ backgroundColor: '#FFF', padding: '15px', borderRadius: '8px', borderLeft: '5px solid #3E6F9B', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                <div style={{ fontSize: '12px', color: '#666' }}>Class Health Average</div>
-                <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#3E6F9B' }}>84.8 / 100</div>
+            <form onSubmit={handleRegister}>
+              <div style={{ ...styles.sectionHeadingBlue, marginTop: '15px' }}>Are you a teacher or student?</div>
+              <div style={{ fontFamily: manropeFont, fontSize: '14px' }}>
+                <label style={{ marginRight: '15px', color: charBlack, cursor: 'pointer', fontSize: '14px' }}>
+                  <input
+                    type="radio"
+                    name="role"
+                    value="Teacher"
+                    checked={regRole === 'Teacher'}
+                    onChange={() => {
+                      setRegRole('Teacher');
+                      setRoleError(false);
+                      setGeneralRegError(false);
+                    }}
+                  />{' '}
+                  Teacher
+                </label>
+                <label style={{ color: charBlack, cursor: 'pointer', fontSize: '14px' }}>
+                  <input
+                    type="radio"
+                    name="role"
+                    value="Student"
+                    checked={regRole === 'Student'}
+                    onChange={() => {
+                      setRegRole('Student');
+                      setRegGrade('');
+                      setRoleError(false);
+                      setGradeError(false);
+                      setGeneralRegError(false);
+                    }}
+                  />{' '}
+                  Student
+                </label>
+                <div style={{ color: roleError ? 'red' : charBlack, fontSize: '10px', marginTop: '4px' }}>
+                  Please select whether you are a teacher registering a new classroom or a student registering into an existing classroom with a classroom code that your teacher has given you. This is a required field.
+                </div>
               </div>
-              <div style={{ backgroundColor: '#FFF', padding: '15px', borderRadius: '8px', borderLeft: '5px solid #4CAF50', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                <div style={{ fontSize: '12px', color: '#666' }}>Avg Daily Water</div>
-                <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#4CAF50' }}>7.1 Glasses</div>
+
+              <div style={styles.sectionHeadingBlue}>What grade is your classroom?</div>
+              <div style={{ fontFamily: manropeFont }}>
+                <select
+                  value={regGrade}
+                  disabled={regRole === 'Student'}
+                  onChange={(e) => {
+                    setRegGrade(e.target.value as any);
+                    setGradeError(false);
+                    setGeneralRegError(false);
+                  }}
+                  style={{
+                    ...styles.inputBox,
+                    margin: '0',
+                    backgroundColor: regRole === 'Student' ? '#EAEAEA' : '#FFFFFF'
+                  }}
+                >
+                  <option value="">Select Grade Level</option>
+                  <option value="K - 5th">K - 5th</option>
+                  <option value="6th - 8th">6th - 8th</option>
+                  <option value="9th - 12th">9th - 12th</option>
+                </select>
+                <div style={{ color: gradeError ? 'red' : charBlack, fontSize: '10px', marginTop: '4px' }}>
+                  If you are a teacher, this is a required field. Please select the grade of your classroom. If you are a student, you do not need to make a selection. Your teacher will have already done this for your classroom.
+                </div>
               </div>
-              <div style={{ backgroundColor: '#FFF', padding: '15px', borderRadius: '8px', borderLeft: '5px solid #FF9800', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                <div style={{ fontSize: '12px', color: '#666' }}>Avg Physical Activity</div>
-                <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#FF9800' }}>36.0 Mins</div>
+
+              <div style={styles.sectionHeadingBlue}>What is your username?</div>
+              <div style={{ fontFamily: manropeFont }}>
+                <input
+                  type="text"
+                  placeholder="username"
+                  value={regUsername}
+                  onChange={(e) => {
+                    setRegUsername(e.target.value);
+                    setRegFormatError(false);
+                    setRegTakenError(false);
+                    setGeneralRegError(false);
+                  }}
+                  style={{ ...styles.inputBox, margin: '0' }}
+                />
+                <div style={{ color: regFormatError ? 'red' : charBlack, fontSize: '10px', marginTop: '4px' }}>
+                  Please select a username that is 6-12 alphanumeric characters (no special characters).
+                </div>
+                {regTakenError && (
+                  <div style={{ color: 'red', fontSize: '10px', marginTop: '4px' }}>
+                    That username has already been registered. Please select a different username.
+                  </div>
+                )}
               </div>
-              <div style={{ backgroundColor: '#FFF', padding: '15px', borderRadius: '8px', borderLeft: '5px solid #9C27B0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                <div style={{ fontSize: '12px', color: '#666' }}>Avg Sleep Duration</div>
-                <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#9C27B0' }}>7.5 Hours</div>
+
+              <div style={styles.sectionHeadingBlue}>What is your classroom code?</div>
+              <div style={{ fontFamily: manropeFont }}>
+                <input
+                  type="text"
+                  placeholder="classroom code"
+                  value={regClassroomCode}
+                  onChange={(e) => {
+                    setRegClassroomCode(e.target.value);
+                    setCodeEmptyError(false);
+                    setCodeCustomError('');
+                    setGeneralRegError(false);
+                  }}
+                  style={{ ...styles.inputBox, margin: '0' }}
+                />
+                <div style={{ color: codeEmptyError ? 'red' : charBlack, fontSize: '10px', marginTop: '4px' }}>
+                  If you are a teacher registering a new classroom, please enter a unique code for your classroom. If you are a student joining your teacher’s classroom, please enter the classroom code that your teacher gave you.
+                </div>
+                {codeCustomError && (
+                  <div style={{ color: 'red', fontSize: '10px', marginTop: '4px' }}>
+                    {codeCustomError}
+                  </div>
+                )}
               </div>
+
+              <button type="submit" style={styles.button}>
+                Register
+              </button>
+
+              {generalRegError && (
+                <div style={{ color: 'red', fontSize: '13px', marginTop: '8px', fontWeight: 'bold', textAlign: 'center' }}>
+                  Try registering again. The information indicated above is incorrect.
+                </div>
+              )}
+            </form>
+
+            <div style={styles.linkText}>
+              Already have an account?{' '}
+              <span
+                style={styles.linkAnchor}
+                onClick={() => {
+                  setRegFormatError(false);
+                  setRegTakenError(false);
+                  setCurrentPage('login');
+                }}
+              >
+                Log In Now
+              </span>
             </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-            {/* Student Leaderboard Table */}
-            <div style={{ backgroundColor: '#FFF', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-              <h3 style={{ marginBottom: '15px', color: '#333' }}>Student Scoreboard & Averages</h3>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+  // --- DASHBOARD WRAPPER ---
+  const currentUserGrade = getCurrentUserGrade();
+  const currentUserClassroom = getCurrentUserClassroomCode();
+  const habitsConfig = getHabitsConfig(currentUserGrade);
+
+  return (
+    <div style={styles.appContainer}>
+      <div style={styles.dashboardLayout}>
+        <div style={styles.sidebar}>
+          <div style={{ width: '100%', display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+            <img
+              src={logo}
+              alt="HealthyHabitsED Logo"
+              style={{
+                maxWidth: '120px',
+                width: '100%',
+                height: 'auto',
+                display: 'block',
+                objectFit: 'contain'
+              }}
+            />
+          </div>
+
+          {/* EDIT 16 Requirement: My Classroom Scorecard button at top */}
+          <button
+            style={{
+              ...styles.navButton,
+              ...(currentPage === 'classroom' ? styles.activeNavButton : {})
+            }}
+            onClick={() => setCurrentPage('classroom')}
+          >
+            My Classroom Scorecard
+          </button>
+
+          <button
+            style={{
+              ...styles.navButton,
+              ...(currentPage === 'home' ? styles.activeNavButton : {})
+            }}
+            onClick={() => setCurrentPage('home')}
+          >
+            My Weekly Scorecard
+          </button>
+
+          <button
+            style={{
+              ...styles.navButton,
+              ...(currentPage === 'log' ? styles.activeNavButton : {})
+            }}
+            onClick={() => setCurrentPage('log')}
+          >
+            Log My Daily Data
+          </button>
+
+          <button
+            style={{
+              ...styles.navButton,
+              ...(currentPage === 'view' ? styles.activeNavButton : {})
+            }}
+            onClick={() => setCurrentPage('view')}
+          >
+            View My Daily Data
+          </button>
+
+          <button
+            style={{ ...styles.navButton, marginTop: 'auto', opacity: 0.9 }}
+            onClick={() => {
+              setCurrentUser(null);
+              setCurrentPage('login');
+            }}
+          >
+            Log Out
+          </button>
+        </div>
+
+        <div style={styles.mainContent}>
+          {/* Top header image and info */}
+          <div style={{ textAlign: 'left', marginBottom: '25px' }}>
+            <img src={logo} alt="HealthyHabitsED Logo" style={styles.headerLogoImage} />
+
+            {/* EDIT 16 Requirement: Add My Classroom above My Grade */}
+            <div style={{ color: charBlack, fontFamily: manropeFont, fontSize: '16px' }}>
+              My Classroom: {currentUserClassroom}
+            </div>
+            <div style={{ color: charBlack, fontFamily: manropeFont, fontSize: '16px' }}>
+              My Grade: {currentUserGrade}
+            </div>
+            <div style={{ color: charBlack, fontFamily: manropeFont, fontSize: '16px' }}>
+              Today's Date: {getTodayESTFormatted()}
+            </div>
+          </div>
+
+          {/* EDIT 16 Requirement: My Classroom Scorecard Page */}
+          {currentPage === 'classroom' && (
+            <div style={{ textAlign: 'left', maxWidth: '700px' }}>
+              <h2 style={{ color: steelBlue, fontFamily: manropeFont }}>
+                My Classroom’s Healthy Habits Scorecard (Weekly Average)
+              </h2>
+
+              <table style={styles.logTable}>
                 <thead>
-                  <tr style={{ borderBottom: '2px solid #EEE', backgroundColor: '#F8F9FA' }}>
-                    <th style={{ padding: '10px' }}>Student</th>
-                    <th style={{ padding: '10px' }}>Score</th>
-                    <th style={{ padding: '10px' }}>Water (Avg)</th>
-                    <th style={{ padding: '10px' }}>Activity (Avg)</th>
-                    <th style={{ padding: '10px' }}>Sleep (Avg)</th>
-                    <th style={{ padding: '10px' }}>Streak</th>
+                  <tr>
+                    <th style={styles.logTableHeaderCell}>Habit</th>
+                    <th style={styles.logTableHeaderCell}>Goal</th>
+                    <th style={styles.logTableHeaderCell}>Weekly Average</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {classroomStudents.map((st) => (
-                    <tr key={st.id} style={{ borderBottom: '1px solid #EEE' }}>
-                      <td style={{ padding: '10px', fontWeight: 'bold' }}>{st.name}</td>
-                      <td style={{ padding: '10px', color: '#3E6F9B', fontWeight: 'bold' }}>{st.score} pts</td>
-                      <td style={{ padding: '10px' }}>{st.waterAvg} glasses</td>
-                      <td style={{ padding: '10px' }}>{st.activityAvg} mins</td>
-                      <td style={{ padding: '10px' }}>{st.sleepAvg} hrs</td>
-                      <td style={{ padding: '10px', color: '#E65100', fontWeight: 'bold' }}>🔥 {st.streakDays} days</td>
-                    </tr>
-                  ))}
+                  {habitsConfig.map((h) => {
+                    const avg = getClassroomWeeklyAverage(h.key);
+                    return (
+                      <tr key={h.key}>
+                        <td style={styles.logTableCell}>
+                          {h.icon} {h.label}
+                        </td>
+                        <td style={styles.logTableCell}>{h.goal}</td>
+                        <td style={styles.logTableCell}>
+                          {avg} <span style={{ marginLeft: '10px' }}>{renderStatusIcon(h.key, avg, currentUserGrade)}</span>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* ==========================================
-            **PAGE 2: MY SCORECARD**
-            ========================================== */}
-        {activePage === 'My Scorecard' && (
-          <div>
-            <h1 style={{ color: '#3E6F9B', fontSize: '24px', marginBottom: '10px' }}>My Scorecard</h1>
-            <p style={{ color: '#555', marginBottom: '20px' }}>Your personal health score and progress summary.</p>
+          {/* Home / Weekly Scorecard */}
+          {currentPage === 'home' && (
+            <div style={{ textAlign: 'left', maxWidth: '700px' }}>
+              <h2 style={{ color: steelBlue, fontFamily: manropeFont }}>
+                My Healthy Habits Scorecard (Weekly Average)
+              </h2>
 
-            {/* Individual Score Card Display */}
-            <div style={{ backgroundColor: '#FFF', padding: '25px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', maxWidth: '600px', marginBottom: '25px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-                <div>
-                  <h2 style={{ fontSize: '32px', margin: 0, color: '#3E6F9B' }}>92 / 100</h2>
-                  <div style={{ color: '#4CAF50', fontWeight: 'bold', marginTop: '5px' }}>Grade: Excellent Healthy Habits!</div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '24px' }}>🔥 14 Days</div>
-                  <div style={{ fontSize: '12px', color: '#777' }}>Current Log Streak</div>
-                </div>
-              </div>
-
-              <hr style={{ border: 'none', borderTop: '1px solid #EEE', margin: '15px 0' }} />
-
-              <h4 style={{ marginBottom: '10px' }}>Goal Achievements:</h4>
-              <ul style={{ paddingLeft: '20px', lineHeight: '1.8' }}>
-                <li>✅ <strong>Water Goal:</strong> Met 6 out of 7 days this week</li>
-                <li>✅ <strong>Physical Activity Goal:</strong> Met 5 out of 7 days this week</li>
-                <li>✅ <strong>Sleep Goal:</strong> Met 7 out of 7 days this week</li>
-                <li>⭐ <strong>Whole Foods Goal:</strong> Reached 80+ whole foods target</li>
-              </ul>
+              <table style={styles.logTable}>
+                <thead>
+                  <tr>
+                    <th style={styles.logTableHeaderCell}>Habit</th>
+                    <th style={styles.logTableHeaderCell}>Goal</th>
+                    <th style={styles.logTableHeaderCell}>Weekly Average</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {habitsConfig.map((h) => {
+                    const avg = getWeeklyAverage(h.key);
+                    return (
+                      <tr key={h.key}>
+                        <td style={styles.logTableCell}>
+                          {h.icon} {h.label}
+                        </td>
+                        <td style={styles.logTableCell}>{h.goal}</td>
+                        <td style={styles.logTableCell}>
+                          {avg} <span style={{ marginLeft: '10px' }}>{renderStatusIcon(h.key, avg, currentUserGrade)}</span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* ==========================================
-            **PAGE 3: MY DAILY LOG**
-            ========================================== */}
-        {activePage === 'My Daily Log' && (
-          <div>
-            <h1 style={{ color: '#3E6F9B', fontSize: '24px', marginBottom: '10px' }}>My Daily Data Log</h1>
-            <p style={{ color: '#555', marginBottom: '20px' }}>Record your habits for today ({dailyLog.date}).</p>
+          {/* Log My Daily Data Page */}
+          {currentPage === 'log' && (
+            <div style={{ textAlign: 'left', maxWidth: '700px' }}>
+              <h2 style={{ color: steelBlue, fontFamily: manropeFont }}>Log My Daily Data</h2>
 
-            <form onSubmit={handleSaveDailyLog} style={{ backgroundColor: '#FFF', padding: '25px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', maxWidth: '500px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-              
-              <label style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                <strong>Water (Glasses):</strong>
-                <input
-                  type="number"
-                  min="0"
-                  max="20"
-                  value={dailyLog.waterGlasses}
-                  onChange={(e) => setDailyLog({ ...dailyLog, waterGlasses: Number(e.target.value) })}
-                  style={{ padding: '8px', border: '1px solid #CCC', borderRadius: '4px' }}
-                />
-              </label>
+              <form onSubmit={handleLogSubmit}>
+                <table style={styles.logTable}>
+                  <thead>
+                    <tr>
+                      <th style={styles.logTableHeaderCell}>Habit</th>
+                      <th style={styles.logTableHeaderCell}>Selection</th>
+                      <th style={styles.logTableHeaderCell}>Goal</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {habitsConfig.map((h) => (
+                      <tr key={h.key}>
+                        <td style={styles.logTableCell}>
+                          {h.icon} {h.label}
+                        </td>
+                        <td style={styles.logTableCell}>
+                          <select
+                            value={logFormValues[h.key]}
+                            onChange={(e) =>
+                              setLogFormValues({
+                                ...logFormValues,
+                                [h.key]: Number(e.target.value)
+                              })
+                            }
+                            style={{ ...styles.inputBox, width: '130px', margin: 0 }}
+                          >
+                            {h.selections.map((val) => (
+                              <option key={val} value={val}>
+                                {h.selectionLabels && h.selectionLabels[val]
+                                  ? h.selectionLabels[val]
+                                  : val}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td style={styles.logTableCell}>{h.goal}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
 
-              <label style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                <strong>Physical Activity (Minutes):</strong>
-                <input
-                  type="number"
-                  min="0"
-                  max="300"
-                  value={dailyLog.activityMinutes}
-                  onChange={(e) => setDailyLog({ ...dailyLog, activityMinutes: Number(e.target.value) })}
-                  style={{ padding: '8px', border: '1px solid #CCC', borderRadius: '4px' }}
-                />
-              </label>
+                <button type="submit" style={{ ...styles.button, width: '200px', marginTop: '20px' }}>
+                  Submit
+                </button>
+              </form>
 
-              <label style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                <strong>Sleep (Hours):</strong>
-                <input
-                  type="number"
-                  min="0"
-                  max="24"
-                  value={dailyLog.sleepHours}
-                  onChange={(e) => setDailyLog({ ...dailyLog, sleepHours: Number(e.target.value) })}
-                  style={{ padding: '8px', border: '1px solid #CCC', borderRadius: '4px' }}
-                />
-              </label>
+              {logSuccessMsg && (
+                <div style={{ color: 'green', marginTop: '10px', fontWeight: 'bold' }}>
+                  {logSuccessMsg}
+                </div>
+              )}
+            </div>
+          )}
 
-              {/* Whole Foods Dropdown */}
-              <label style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                <strong>Whole Foods (% of diet):</strong>
+          {/* View My Daily Data Page */}
+          {currentPage === 'view' && (
+            <div style={{ textAlign: 'left' }}>
+              <h2 style={{ color: steelBlue, fontFamily: manropeFont }}>View My Daily Data (4-Week)</h2>
+
+              <div style={{ marginBottom: '20px', fontSize: '16px', fontFamily: manropeFont }}>
+                <span style={{ color: steelBlue, fontWeight: 'bold' }}>Habit: </span>
                 <select
-                  value={dailyLog.wholeFoods}
-                  onChange={(e) => setDailyLog({ ...dailyLog, wholeFoods: e.target.value })}
-                  style={{ padding: '8px', border: '1px solid #CCC', borderRadius: '4px' }}
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value as HabitKey)}
+                  style={{ ...styles.inputBox, width: '240px', display: 'inline-block', margin: '0 15px 0 5px', color: charBlack }}
                 >
-                  {wholeFoodsOptions.map((opt) => (
-                    <option key={opt} value={opt}>{opt}</option>
+                  {/* EDIT 16 Requirement: Only include the text before the comma */}
+                  {habitsConfig.map((h) => (
+                    <option key={h.key} value={h.key} style={{ color: charBlack }}>
+                      {h.label}
+                    </option>
                   ))}
                 </select>
-              </label>
 
-              {/* Ultra-Processed Foods Dropdown */}
-              <label style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                <strong>Ultra-Processed Foods (% of diet):</strong>
-                <select
-                  value={dailyLog.ultraProcessed}
-                  onChange={(e) => setDailyLog({ ...dailyLog, ultraProcessed: e.target.value })}
-                  style={{ padding: '8px', border: '1px solid #CCC', borderRadius: '4px' }}
-                >
-                  {ultraProcessedOptions.map((opt) => (
-                    <option key={opt} value={opt}>{opt}</option>
-                  ))}
-                </select>
-              </label>
-
-              <label style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                <strong>Daily Reflections / Notes:</strong>
-                <textarea
-                  rows={3}
-                  value={dailyLog.notes}
-                  onChange={(e) => setDailyLog({ ...dailyLog, notes: e.target.value })}
-                  style={{ padding: '8px', border: '1px solid #CCC', borderRadius: '4px' }}
-                />
-              </label>
-
-              <button
-                type="submit"
-                style={{
-                  backgroundColor: '#3E6F9B',
-                  color: '#FFF',
-                  padding: '12px',
-                  border: 'none',
-                  borderRadius: '6px',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                  marginTop: '10px',
-                }}
-              >
-                Save Daily Log
-              </button>
-            </form>
-          </div>
-        )}
-
-        {/* ==========================================
-            **PAGE 4: MY DAILY VIEW**
-            ========================================== */}
-        {activePage === 'My Daily View' && (
-          <div>
-            <h1 style={{ color: '#3E6F9B', fontSize: '24px', marginBottom: '10px' }}>My Daily View</h1>
-            <p style={{ color: '#555', marginBottom: '20px' }}>Review past logged data by date.</p>
-
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ marginRight: '10px', fontWeight: 'bold' }}>Select Date:</label>
-              <select
-                value={selectedHistoryDate}
-                onChange={(e) => setSelectedHistoryDate(e.target.value)}
-                style={{ padding: '8px', borderRadius: '4px', border: '1px solid #CCC' }}
-              >
-                {Object.keys(logHistory).map((dt) => (
-                  <option key={dt} value={dt}>{dt}</option>
-                ))}
-              </select>
-            </div>
-
-            {logHistory[selectedHistoryDate] ? (
-              <div style={{ backgroundColor: '#FFF', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', maxWidth: '500px' }}>
-                <h3 style={{ color: '#3E6F9B', marginBottom: '15px' }}>Log for {selectedHistoryDate}</h3>
-                <ul style={{ listStyle: 'none', padding: 0, lineHeight: '2' }}>
-                  <li>💧 <strong>Water Consumed:</strong> {logHistory[selectedHistoryDate].waterGlasses} glasses</li>
-                  <li>🏃 <strong>Physical Activity:</strong> {logHistory[selectedHistoryDate].activityMinutes} minutes</li>
-                  <li>😴 <strong>Sleep Duration:</strong> {logHistory[selectedHistoryDate].sleepHours} hours</li>
-                  <li>🥗 <strong>Whole Foods Level:</strong> {logHistory[selectedHistoryDate].wholeFoods}</li>
-                  <li>🍿 <strong>Ultra-Processed Level:</strong> {logHistory[selectedHistoryDate].ultraProcessed}</li>
-                  <li>📝 <strong>Notes:</strong> {logHistory[selectedHistoryDate].notes || 'None'}</li>
-                </ul>
-              </div>
-            ) : (
-              <p style={{ color: '#888' }}>No log found for this date.</p>
-            )}
-          </div>
-        )}
-
-        {/* ==========================================
-            **PAGE 5: LEARNING CENTER**
-            ========================================== */}
-        {activePage === 'Learning Center' && (
-          <div>
-            <h1 style={{ color: '#3E6F9B', fontSize: '24px', marginBottom: '10px' }}>Learning Center</h1>
-            <p style={{ color: '#555', marginBottom: '20px' }}>Educational guides on daily health, nutrition, and wellness.</p>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
-              <div style={{ backgroundColor: '#FFF', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                <h3 style={{ color: '#3E6F9B', marginBottom: '8px' }}>💧 Hydration Essentials</h3>
-                <p style={{ fontSize: '14px', lineHeight: '1.5', color: '#555' }}>
-                  Drinking at least 8 glasses of water daily boosts focus, energy, and athletic performance. Avoid sugary drinks whenever possible.
-                </p>
+                <span style={{ color: steelBlue, fontWeight: 'bold' }}>Goal: </span>
+                <span style={{ color: charBlack }}>
+                  {habitsConfig.find((h) => h.key === selectedCategory)?.goal}
+                </span>
               </div>
 
-              <div style={{ backgroundColor: '#FFF', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                <h3 style={{ color: '#3E6F9B', marginBottom: '8px' }}>🥗 Whole Foods vs Ultra-Processed</h3>
-                <p style={{ fontSize: '14px', lineHeight: '1.5', color: '#555' }}>
-                  Whole foods (fruits, vegetables, nuts, whole grains) provide sustained energy. Ultra-processed foods contain added sugars and preservatives that drain energy.
-                </p>
-              </div>
+              {/* 28-Day Calendar Grid */}
+              <div style={styles.gridTable}>
+                {get28DayGrid().map(({ dateStr, entry }) => {
+                  const val = entry ? entry[selectedCategory] : undefined;
+                  let fontColor = charBlack;
 
-              <div style={{ backgroundColor: '#FFF', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                <h3 style={{ color: '#3E6F9B', marginBottom: '8px' }}>😴 Sleep Hygiene for Students</h3>
-                <p style={{ fontSize: '14px', lineHeight: '1.5', color: '#555' }}>
-                  Aim for 8–10 hours of sleep per night. Turn off screens 30 minutes before bed to allow your brain to rest and recharge for class.
-                </p>
+                  if (val !== undefined) {
+                    const status = getHabitColor(selectedCategory, val, currentUserGrade);
+                    if (status === 'green') fontColor = 'green';
+                    else if (status === 'yellow') fontColor = '#D4AC0D';
+                    else fontColor = 'red';
+                  }
+
+                  return (
+                    <div key={dateStr} style={styles.gridCell}>
+                      <div style={{ fontSize: '11px', color: '#666', marginBottom: '4px' }}>
+                        {formatDateToMDY(dateStr)}
+                      </div>
+                      <div style={{ fontSize: '16px', fontWeight: 'bold', color: fontColor }}>
+                        {val !== undefined ? val : 'Not Logged'}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
-          </div>
-        )}
-
-        {/* ==========================================
-            **PAGE 6: COMMUNITY RESOURCES**
-            ========================================== */}
-        {activePage === 'Community Resources' && (
-          <div>
-            <h1 style={{ color: '#3E6F9B', fontSize: '24px', marginBottom: '10px' }}>Community Resources</h1>
-            <p style={{ color: '#555', marginBottom: '20px' }}>Local programs and support for health, nutrition, and recreation.</p>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', maxWidth: '700px' }}>
-              <div style={{ backgroundColor: '#FFF', padding: '15px', borderRadius: '8px', borderLeft: '4px solid #3E6F9B', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                <h4 style={{ margin: '0 0 5px 0' }}>🍎 Free Student Meals Program</h4>
-                <p style={{ margin: 0, fontSize: '14px', color: '#555' }}>Provides free breakfast and lunch to eligible students throughout the school year and summer months.</p>
-              </div>
-
-              <div style={{ backgroundColor: '#FFF', padding: '15px', borderRadius: '8px', borderLeft: '4px solid #3E6F9B', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                <h4 style={{ margin: '0 0 5px 0' }}>🏞️ Local Parks & Recreation Trails</h4>
-                <p style={{ margin: 0, fontSize: '14px', color: '#555' }}>Access free public parks, walking trails, and basketball courts in your neighborhood.</p>
-              </div>
-
-              <div style={{ backgroundColor: '#FFF', padding: '15px', borderRadius: '8px', borderLeft: '4px solid #3E6F9B', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                <h4 style={{ margin: '0 0 5px 0' }}>📚 Youth Sports & Afterschool Tutoring</h4>
-                <p style={{ margin: 0, fontSize: '14px', color: '#555' }}>Free homework help and recreational sports programs at local community centers.</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ==========================================
-            **PAGE 7: STUDENT SURVEY**
-            ========================================== */}
-        {activePage === 'Survey' && (
-          <div>
-            <h1 style={{ color: '#3E6F9B', fontSize: '24px', marginBottom: '10px' }}>Student Healthy Habits Survey</h1>
-            <p style={{ color: '#555', marginBottom: '20px' }}>Help us understand what resources and support your class needs.</p>
-
-            <form onSubmit={handleSurveySubmit} style={{ backgroundColor: '#FFF', padding: '25px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', maxWidth: '700px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              
-              {/* Question 1 */}
-              <div>
-                <p style={{ fontWeight: 'bold', marginBottom: '8px' }}>1. Which healthy habit is the hardest for you to practice consistently?</p>
-                {[
-                  'Getting enough sleep',
-                  'Drinking enough water',
-                  'Eating fruits and vegetables',
-                  'Being physically active',
-                  'Limiting sugary drinks or ultra-processed foods',
-                  'Nothing in particular right now',
-                ].map((opt) => (
-                  <label key={opt} style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>
-                    <input
-                      type="radio"
-                      name="hardestHabit"
-                      value={opt}
-                      checked={studentSurvey.hardestHabit === opt}
-                      onChange={(e) => setStudentSurvey({ ...studentSurvey, hardestHabit: e.target.value })}
-                    /> {' '}
-                    {opt}
-                  </label>
-                ))}
-              </div>
-
-              {/* Question 2 */}
-              <div>
-                <p style={{ fontWeight: 'bold', marginBottom: '8px' }}>2. What makes healthy habits difficult for you?</p>
-                {[
-                  "I don't have enough time",
-                  'Healthy foods or activities cost too much',
-                  "I don't have transportation",
-                  'I have too much homework or other responsibilities',
-                  "I don't have a safe place to be active",
-                  "I don't know where to find healthy resources",
-                  'Something else',
-                  'Nothing in particular right now',
-                ].map((opt) => (
-                  <label key={opt} style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>
-                    <input
-                      type="checkbox"
-                      checked={studentSurvey.difficulties.includes(opt)}
-                      onChange={() => handleCheckboxChange('difficulties', opt)}
-                    /> {' '}
-                    {opt}
-                  </label>
-                ))}
-              </div>
-
-              {/* Question 3 */}
-              <div>
-                <p style={{ fontWeight: 'bold', marginBottom: '8px' }}>3. Which free community resources would you like to learn more about?</p>
-                {[
-                  'Free student meals',
-                  'Food pantries',
-                  'Recreation centers',
-                  'Parks, playgrounds, and trails',
-                  'Youth sports',
-                  'Homework help or tutoring',
-                  'Mentoring programs',
-                  'None right now',
-                ].map((opt) => (
-                  <label key={opt} style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>
-                    <input
-                      type="checkbox"
-                      checked={studentSurvey.resourcesOfInterest.includes(opt)}
-                      onChange={() => handleCheckboxChange('resourcesOfInterest', opt)}
-                    /> {' '}
-                    {opt}
-                  </label>
-                ))}
-              </div>
-
-              {/* Question 4 */}
-              <div>
-                <p style={{ fontWeight: 'bold', marginBottom: '8px' }}>4. How has practicing healthy habits affected you this month?</p>
-                {[
-                  'I have more energy',
-                  'I can focus better in class',
-                  'I’m sleeping better or more',
-                  'My mood has improved',
-                  'I feel stronger or more active',
-                  'I haven’t noticed a difference, yet',
-                ].map((opt) => (
-                  <label key={opt} style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>
-                    <input
-                      type="checkbox"
-                      checked={studentSurvey.effects.includes(opt)}
-                      onChange={() => handleCheckboxChange('effects', opt)}
-                    /> {' '}
-                    {opt}
-                  </label>
-                ))}
-              </div>
-
-              {/* Question 5 */}
-              <div>
-                <p style={{ fontWeight: 'bold', marginBottom: '8px' }}>5. Would you like more healthy habit tips and local resources?</p>
-                {['Yes', 'Maybe later', 'No thanks'].map((opt) => (
-                  <label key={opt} style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>
-                    <input
-                      type="radio"
-                      name="wantsMoreTips"
-                      value={opt}
-                      checked={studentSurvey.wantsMoreTips === opt}
-                      onChange={(e) => setStudentSurvey({ ...studentSurvey, wantsMoreTips: e.target.value })}
-                    /> {' '}
-                    {opt}
-                  </label>
-                ))}
-              </div>
-
-              <button
-                type="submit"
-                style={{
-                  backgroundColor: '#3E6F9B',
-                  color: '#FFF',
-                  padding: '12px',
-                  border: 'none',
-                  borderRadius: '6px',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                  marginTop: '10px',
-                }}
-              >
-                Submit Survey Response
-              </button>
-            </form>
-          </div>
-        )}
-
-        {/* ==========================================
-            **PAGE 8: SURVEY RESULTS (TEACHER VIEW)**
-            ========================================== */}
-        {activePage === 'Survey Results' && userStatus === 'Teacher' && (
-          <div>
-            <h1 style={{ color: '#3E6F9B', fontSize: '24px', marginBottom: '10px' }}>Classroom Survey Results</h1>
-            <p style={{ color: '#555', marginBottom: '20px' }}>Aggregated feedback submitted by students in classroom <strong>{classroomCode}</strong>.</p>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '700px' }}>
-              
-              <div style={{ backgroundColor: '#FFF', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                <h4 style={{ margin: '0 0 10px 0', color: '#3E6F9B' }}>Top Hardest Habits:</h4>
-                <ul style={{ paddingLeft: '20px', margin: 0 }}>
-                  <li>Getting enough sleep: <strong>{getAnswerCount('hardestHabit', 'Getting enough sleep')} responses</strong></li>
-                  <li>Drinking enough water: <strong>{getAnswerCount('hardestHabit', 'Drinking enough water')} responses</strong></li>
-                  <li>Being physically active: <strong>{getAnswerCount('hardestHabit', 'Being physically active')} responses</strong></li>
-                </ul>
-              </div>
-
-              <div style={{ backgroundColor: '#FFF', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                <h4 style={{ margin: '0 0 10px 0', color: '#3E6F9B' }}>Common Obstacles Identified:</h4>
-                <ul style={{ paddingLeft: '20px', margin: 0 }}>
-                  <li>Not enough time: <strong>{getAnswerCount('difficulties', "I don't have enough time")} responses</strong></li>
-                  <li>Too much homework / responsibilities: <strong>{getAnswerCount('difficulties', 'I have too much homework or other responsibilities')} responses</strong></li>
-                  <li>No safe place to be active: <strong>{getAnswerCount('difficulties', "I don't have a safe place to be active")} responses</strong></li>
-                </ul>
-              </div>
-
-              <div style={{ backgroundColor: '#FFF', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                <h4 style={{ margin: '0 0 10px 0', color: '#3E6F9B' }}>Requested Resources:</h4>
-                <ul style={{ paddingLeft: '20px', margin: 0 }}>
-                  <li>Free student meals: <strong>{getAnswerCount('resourcesOfInterest', 'Free student meals')} responses</strong></li>
-                  <li>Parks & trails: <strong>{getAnswerCount('resourcesOfInterest', 'Parks, playgrounds, and trails')} responses</strong></li>
-                  <li>Homework help / Tutoring: <strong>{getAnswerCount('resourcesOfInterest', 'Homework help or tutoring')} responses</strong></li>
-                </ul>
-              </div>
-
-            </div>
-          </div>
-        )}
-
-      </main>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
