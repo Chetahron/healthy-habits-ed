@@ -55,10 +55,13 @@ interface SurveyResponse {
 }
 
 export default function App() {
-  // Navigation & Auth State
-  const [currentPage, setCurrentPage] = useState<string>('classroom');
+  // Navigation & Auth State - Correctly defaults to 'login' if no active user session exists
   const [currentUser, setCurrentUser] = useState<string | null>(() => {
     return localStorage.getItem('healthy_habits_current_user') || null;
+  });
+
+  const [currentPage, setCurrentPage] = useState<string>(() => {
+    return localStorage.getItem('healthy_habits_current_user') ? 'classroom' : 'login';
   });
 
   // Form Inputs - Login
@@ -162,7 +165,6 @@ export default function App() {
   useEffect(() => {
     if (currentUser) {
       localStorage.setItem('healthy_habits_current_user', currentUser);
-      // Pre-fill survey username and classroom code
       if (usersDb[currentUser]) {
         setStudentSurvey(prev => ({
           ...prev,
@@ -1002,6 +1004,7 @@ export default function App() {
           }}
           onClick={() => {
             setCurrentUser(null);
+            localStorage.removeItem('healthy_habits_current_user');
             setCurrentPage('login');
           }}
         >
