@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { db } from './firebase';
+import { collection, doc, setDoc, onSnapshot } from 'firebase/firestore';
 import logo from './assets/logo.png';
-
+import sidebarLogo from './assets/new-sidebar-logo.png';
 
 // --- Habit Types & Definitions ---
 export type HabitKey =
@@ -13,7 +15,6 @@ export type HabitKey =
   | 'sugaryDrinks'
   | 'mood';
 
-
 export interface HabitConfig {
   key: HabitKey;
   label: string;
@@ -22,7 +23,6 @@ export interface HabitConfig {
   selectionLabels?: Record<number, string>;
   goal: string;
 }
-
 
 interface DailyEntry {
   date: string; // YYYY-MM-DD
@@ -36,7 +36,6 @@ interface DailyEntry {
   mood?: number;
 }
 
-
 interface UserData {
   username: string;
   role: 'Teacher' | 'Student';
@@ -45,24 +44,35 @@ interface UserData {
   entries: Record<string, DailyEntry>;
 }
 
+interface SurveyResponse {
+  studentUsername: string;
+  classroomCode: string;
+  hardestHabit: string;
+  difficulties: string[];
+  resourcesOfInterest: string[];
+  effects: string[];
+  wantsMoreTips: string;
+}
 
 export default function App() {
-  // Navigation & Auth State
-  const [currentPage, setCurrentPage] = useState<'login' | 'register' | 'classroom' | 'home' | 'log' | 'view'>('login');
-  const [currentUser, setCurrentUser] = useState<string | null>(null);
+  // Navigation & Auth State - Defaults to 'login' if no active session
+  const [currentUser, setCurrentUser] = useState<string | null>(() => {
+    return localStorage.getItem('healthy_habits_current_user') || null;
+  });
 
+  const [currentPage, setCurrentPage] = useState<string>(() => {
+    return localStorage.getItem('healthy_habits_current_user') ? 'classroom' : 'login';
+  });
 
   // Form Inputs - Login
   const [loginUsername, setLoginUsername] = useState('');
   const [loginError, setLoginError] = useState('');
-
 
   // Form Inputs - Registration
   const [regRole, setRegRole] = useState<'Teacher' | 'Student' | ''>('');
   const [regGrade, setRegGrade] = useState<'K - 5th' | '6th - 8th' | '9th - 12th' | ''>('');
   const [regUsername, setRegUsername] = useState('');
   const [regClassroomCode, setRegClassroomCode] = useState('');
-
 
   // Registration Validation Errors
   const [regFormatError, setRegFormatError] = useState(false);
@@ -73,53 +83,104 @@ export default function App() {
   const [codeCustomError, setCodeCustomError] = useState('');
   const [generalRegError, setGeneralRegError] = useState(false);
 
-
   // Log Data Inputs State
   const [logFormValues, setLogFormValues] = useState<Record<HabitKey, number>>({
-    sleep: 0,
-    physicalActivity: 0,
-    water: 0,
-    fruitsVeg: 0,
-    wholeFoods: 0,
-    upf: 0,
+    sleep: 8,
+    physicalActivity: 60,
+    water: 8,
+    fruitsVeg: 5,
+    wholeFoods: 80,
+    upf: 20,
     sugaryDrinks: 0,
-    mood: 1,
+    mood: 3,
   });
   const [logSuccessMsg, setLogSuccessMsg] = useState('');
 
-
   // View Data State
-  const [selectedCategory, setSelectedCategory] = useState<HabitKey>('sleep');
+  const [selectedCategory, setSelectedCategory] = useState<HabitKey>('water');
 
+  // Survey Form State
+  const [studentSurvey, setStudentSurvey] = useState<SurveyResponse>({
+    studentUsername: '',
+    classroomCode: '',
+    hardestHabit: '',
+    difficulties: [],
+    resourcesOfInterest: [],
+    effects: [],
+    wantsMoreTips: '',
+  });
+  const [surveySuccessMsg, setSurveySuccessMsg] = useState('');
 
-  // Database stored in LocalStorage
-  const [usersDb, setUsersDb] = useState<Record<string, UserData>>({});
-
-
-  useEffect(() => {
-    const saved = localStorage.getItem('healthy_habits_users');
-    if (saved) {
-      try {
-        setUsersDb(JSON.parse(saved));
-      } catch (e) {
-        console.error('Failed to parse local storage', e);
-      }
+  // --- Database & Firebase Sync Setup ---
+  const [usersDb, setUsersDb] = useState<Record<string, UserData>>(() => {
+    try {
+      const saved = localStorage.getItem('healthy_habits_users_db');
+      return saved ? JSON.parse(saved) : {};
+    } catch (e) {
+      return {};
     }
-  }, []);
+  });
 
+  const [surveyData, setSurveyData] = useState<SurveyResponse[]>([]);
 
-  const saveDb = (updatedDb: Record<string, UserData>) => {
+  const saveDb = async (updatedDb: Record<string, UserData>) => {
     setUsersDb(updatedDb);
-    localStorage.setItem('healthy_habits_users', JSON.stringify(updatedDb));
+    localStorage.setItem('healthy_habits_users_db', JSON.stringify(updatedDb));
+    try {
+      await setDoc(doc(db, 'appData', 'usersDb'), { data: updatedDb });
+    } catch (err) {
+      console.error('Cloud sync error for usersDb:', err);
+    }
   };
 
+  // Real-time Firebase listeners for Cloud Sync
+  useEffect(() => {
+    const unsubscribeUsers = onSnapshot(doc(db, 'appData', 'usersDb'), (docSnap) => {
+      if (docSnap.exists()) {
+        const cloudData = docSnap.data()?.data;
+        if (cloudData) {
+          setUsersDb(cloudData);
+          localStorage.setItem('healthy_habits_users_db', JSON.stringify(cloudData));
+        }
+      }
+    });
+
+    const unsubscribeSurveys = onSnapshot(collection(db, 'surveys'), (snapshot) => {
+      const fetchedSurveys: SurveyResponse[] = [];
+      snapshot.forEach((docItem) => {
+        fetchedSurveys.push(docItem.data() as SurveyResponse);
+      });
+      if (fetchedSurveys.length > 0) {
+        setSurveyData(fetchedSurveys);
+      }
+    });
+
+    return () => {
+      unsubscribeUsers();
+      unsubscribeSurveys();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem('healthy_habits_current_user', currentUser);
+      if (usersDb[currentUser]) {
+        setStudentSurvey(prev => ({
+          ...prev,
+          studentUsername: currentUser,
+          classroomCode: usersDb[currentUser].classroomCode || ''
+        }));
+      }
+    } else {
+      localStorage.removeItem('healthy_habits_current_user');
+    }
+  }, [currentUser, usersDb]);
 
   // Helper: Get EST ISO Date String (YYYY-MM-DD)
   const getTodayESTISO = (): string => {
     const now = new Date();
     return now.toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
   };
-
 
   // Helper: Get EST Formatted Date String (MM/DD/YYYY)
   const getTodayESTFormatted = (): string => {
@@ -130,8 +191,6 @@ export default function App() {
       day: '2-digit',
       year: 'numeric'
     }).formatToParts(now);
-
-
     let mm = '', dd = '', yyyy = '';
     for (const p of parts) {
       if (p.type === 'month') mm = p.value;
@@ -141,24 +200,19 @@ export default function App() {
     return `${mm}/${dd}/${yyyy}`;
   };
 
-
-  // Helper: Convert YYYY-MM-DD to MM/DD/YYYY
   const formatDateToMDY = (dateStr: string): string => {
     if (!dateStr) return '';
     const [year, month, day] = dateStr.split('-');
     return `${month}/${day}/${year}`;
   };
 
-
-  // Helper: Get Grade for Current User
+  // User & Classroom Lookup Helpers
   const getCurrentUserGrade = (): string => {
     if (!currentUser || !usersDb[currentUser]) return 'N/A';
     const user = usersDb[currentUser];
     if (user.role === 'Teacher' && user.grade) {
       return user.grade;
     }
-
-
     const userCode = (user.classroomCode || '').trim().toLowerCase();
     const teacher = Object.values(usersDb).find(
       (u) => u.role === 'Teacher' && (u.classroomCode || '').trim().toLowerCase() === userCode
@@ -166,115 +220,49 @@ export default function App() {
     return teacher?.grade || user.grade || 'N/A';
   };
 
+  const getCurrentUserRole = (): 'Teacher' | 'Student' | 'N/A' => {
+    if (!currentUser || !usersDb[currentUser]) return 'N/A';
+    return usersDb[currentUser].role || 'N/A';
+  };
 
-  // Helper: Get Classroom Code for Current User
   const getCurrentUserClassroomCode = (): string => {
     if (!currentUser || !usersDb[currentUser]) return 'N/A';
     return usersDb[currentUser].classroomCode || 'N/A';
   };
 
-
-  // Grade-adaptive Habit Configurations
+  // Habit Configs & Grading Logic
   const getHabitsConfig = (grade: string): HabitConfig[] => {
     if (grade === 'K - 5th') {
       return [
-        { key: 'sleep', label: 'Sleep', icon: '💤', selections: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], selectionLabels: { 12: '12+' }, goal: '9 - 12 hours / night' },
+        { key: 'sleep', label: 'Sleep', icon: '😴', selections: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], selectionLabels: { 12: '12+' }, goal: '9 - 12 hours / night' },
         { key: 'physicalActivity', label: 'Physical Activity', icon: '🏃', selections: [0, 15, 30, 45, 60], selectionLabels: { 60: '60+' }, goal: '60+ minutes / day' },
         { key: 'water', label: 'Water', icon: '💧', selections: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], selectionLabels: { 9: '9+' }, goal: '6 - 9 cups / day' },
         { key: 'fruitsVeg', label: 'Fruits & Vegetables', icon: '🍎', selections: [0, 1, 2, 3, 4, 5], selectionLabels: { 5: '5+' }, goal: '>= 5 servings / day' },
         { key: 'wholeFoods', label: 'Whole Foods', icon: '🥗', selections: [0, 10, 20, 30, 40, 50, 60, 70, 80], selectionLabels: { 80: '80%+' }, goal: '>= 80% / day' },
         { key: 'upf', label: 'Ultra-Processed Foods', icon: '🍔', selections: [0, 10, 20, 30, 40], selectionLabels: { 40: '40%+' }, goal: '<= 20% / day' },
-        { key: 'sugaryDrinks', label: 'Sugary Drinks', icon: '🥤', selections: [0, 1], selectionLabels: { 1: '1+' }, goal: '0 drinks / day' },
+        { key: 'sugaryDrinks', label: 'Sugary Drinks', icon: '🧃', selections: [0, 1, 2], selectionLabels: { 2: '2+' }, goal: '0 drinks / day' },
         { key: 'mood', label: 'Mood', icon: '⭐', selections: [1, 2, 3], goal: '3 stars' },
       ];
-    } else if (grade === '6th - 8th') {
+    } else {
       return [
-        { key: 'sleep', label: 'Sleep', icon: '💤', selections: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], selectionLabels: { 10: '10+' }, goal: '8 - 10 hours / night' },
+        { key: 'sleep', label: 'Sleep', icon: '😴', selections: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], selectionLabels: { 10: '10+' }, goal: '8 - 10 hours / night' },
         { key: 'physicalActivity', label: 'Physical Activity', icon: '🏃', selections: [0, 15, 30, 45, 60], selectionLabels: { 60: '60+' }, goal: '60+ minutes / day' },
         { key: 'water', label: 'Water', icon: '💧', selections: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], selectionLabels: { 11: '11+' }, goal: '8 - 11 cups / day' },
         { key: 'fruitsVeg', label: 'Fruits & Vegetables', icon: '🍎', selections: [0, 1, 2, 3, 4, 5], selectionLabels: { 5: '5+' }, goal: '>= 5 servings / day' },
         { key: 'wholeFoods', label: 'Whole Foods', icon: '🥗', selections: [0, 10, 20, 30, 40, 50, 60, 70, 80], selectionLabels: { 80: '80%+' }, goal: '>= 80% / day' },
         { key: 'upf', label: 'Ultra-Processed Foods', icon: '🍔', selections: [0, 10, 20, 30, 40], selectionLabels: { 40: '40%+' }, goal: '<= 20% / day' },
-        { key: 'sugaryDrinks', label: 'Sugary Drinks', icon: '🥤', selections: [0, 1, 2], selectionLabels: { 2: '2+' }, goal: '0 - 1 drinks / day' },
-        { key: 'mood', label: 'Mood', icon: '⭐', selections: [1, 2, 3], goal: '3 stars' },
-      ];
-    } else {
-      return [
-        { key: 'sleep', label: 'Sleep', icon: '💤', selections: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], selectionLabels: { 10: '10+' }, goal: '8 - 10 hours / night' },
-        { key: 'physicalActivity', label: 'Physical Activity', icon: '🏃', selections: [0, 15, 30, 45, 60], selectionLabels: { 60: '60+' }, goal: '60+ minutes / day' },
-        { key: 'water', label: 'Water', icon: '💧', selections: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13], selectionLabels: { 13: '13+' }, goal: '9 - 13 cups / day' },
-        { key: 'fruitsVeg', label: 'Fruits & Vegetables', icon: '🍎', selections: [0, 1, 2, 3, 4, 5], selectionLabels: { 5: '5+' }, goal: '>= 5 servings / day' },
-        { key: 'wholeFoods', label: 'Whole Foods', icon: '🥗', selections: [0, 10, 20, 30, 40, 50, 60, 70, 80], selectionLabels: { 80: '80%+' }, goal: '>= 80% / day' },
-        { key: 'upf', label: 'Ultra-Processed Foods', icon: '🍔', selections: [0, 10, 20, 30, 40], selectionLabels: { 40: '40%+' }, goal: '<= 20% / day' },
-        { key: 'sugaryDrinks', label: 'Sugary Drinks', icon: '🥤', selections: [0, 1, 2], selectionLabels: { 2: '2+' }, goal: '0 - 1 drinks / day' },
+        { key: 'sugaryDrinks', label: 'Sugary Drinks', icon: '🧃', selections: [0, 1, 2], selectionLabels: { 2: '2+' }, goal: '0 - 1 drinks / day' },
         { key: 'mood', label: 'Mood', icon: '⭐', selections: [1, 2, 3], goal: '3 stars' },
       ];
     }
   };
 
-
-  // Color Coding Helper
-  const getHabitColor = (key: HabitKey, val: number, grade: string): 'red' | 'yellow' | 'green' => {
-    if (grade === 'K - 5th') {
-      switch (key) {
-        case 'sleep':
-          return val >= 9 ? 'green' : val === 8 ? 'yellow' : 'red';
-        case 'physicalActivity':
-          return val >= 60 ? 'green' : val === 45 ? 'yellow' : 'red';
-        case 'water':
-          return val >= 6 ? 'green' : val === 5 ? 'yellow' : 'red';
-        case 'fruitsVeg':
-          return val >= 5 ? 'green' : val === 4 ? 'yellow' : 'red';
-        case 'wholeFoods':
-          return val >= 80 ? 'green' : val === 70 ? 'yellow' : 'red';
-        case 'upf':
-          return val <= 20 ? 'green' : val === 30 ? 'yellow' : 'red';
-        case 'sugaryDrinks':
-          return val === 0 ? 'green' : 'red';
-        case 'mood':
-          return val >= 3 ? 'green' : val === 2 ? 'yellow' : 'red';
-      }
-    } else if (grade === '6th - 8th') {
-      switch (key) {
-        case 'sleep':
-          return val >= 8 ? 'green' : val === 7 ? 'yellow' : 'red';
-        case 'physicalActivity':
-          return val >= 60 ? 'green' : val === 45 ? 'yellow' : 'red';
-        case 'water':
-          return val >= 8 ? 'green' : val === 7 ? 'yellow' : 'red';
-        case 'fruitsVeg':
-          return val >= 5 ? 'green' : val === 4 ? 'yellow' : 'red';
-        case 'wholeFoods':
-          return val >= 80 ? 'green' : val === 70 ? 'yellow' : 'red';
-        case 'upf':
-          return val <= 20 ? 'green' : val === 30 ? 'yellow' : 'red';
-        case 'sugaryDrinks':
-          return val <= 1 ? 'green' : 'red';
-        case 'mood':
-          return val >= 3 ? 'green' : val === 2 ? 'yellow' : 'red';
-      }
-    } else {
-      switch (key) {
-        case 'sleep':
-          return val >= 8 ? 'green' : val === 7 ? 'yellow' : 'red';
-        case 'physicalActivity':
-          return val >= 60 ? 'green' : val === 45 ? 'yellow' : 'red';
-        case 'water':
-          return val >= 9 ? 'green' : val === 8 ? 'yellow' : 'red';
-        case 'fruitsVeg':
-          return val >= 5 ? 'green' : val === 4 ? 'yellow' : 'red';
-        case 'wholeFoods':
-          return val >= 80 ? 'green' : val === 70 ? 'yellow' : 'red';
-        case 'upf':
-          return val <= 20 ? 'green' : val === 30 ? 'yellow' : 'red';
-        case 'sugaryDrinks':
-          return val <= 1 ? 'green' : 'red';
-        case 'mood':
-          return val >= 3 ? 'green' : val === 2 ? 'yellow' : 'red';
-      }
+  const getHabitColor = (key: HabitKey, val: number, _grade: string): 'red' | 'yellow' | 'green' => {
+    if (key === 'sugaryDrinks') {
+      return val === 0 ? 'green' : val === 1 ? 'yellow' : 'red';
     }
+    return val >= 8 ? 'green' : val === 7 ? 'yellow' : 'red';
   };
-
 
   // --- Handlers ---
   const handleLogin = (e: React.FormEvent) => {
@@ -284,19 +272,17 @@ export default function App() {
       setCurrentUser(trimmed);
       setLoginError('');
       setLoginUsername('');
-      setCurrentPage('home');
+      setCurrentPage('classroom');
     } else {
-      setLoginError('The username you entered has not yet been registered. Try another username or register.');
+      setLoginError('The username you entered has not yet been registered. Please register first.');
       setLoginUsername('');
     }
   };
-
 
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedUser = (regUsername || '').trim();
     const trimmedCode = (regClassroomCode || '').trim();
-
 
     setRegFormatError(false);
     setRegTakenError(false);
@@ -306,32 +292,27 @@ export default function App() {
     setCodeCustomError('');
     setGeneralRegError(false);
 
-
     let hasError = false;
-
 
     if (!regRole) {
       setRoleError(true);
       hasError = true;
     }
-
-
     if (regRole === 'Teacher' && !regGrade) {
       setGradeError(true);
       hasError = true;
     }
-
 
     const isAlphanumeric = /^[a-zA-Z0-9]{6,12}$/.test(trimmedUser);
     if (!trimmedUser || !isAlphanumeric) {
       setRegFormatError(true);
       hasError = true;
     }
+
     if (usersDb[trimmedUser]) {
       setRegTakenError(true);
       hasError = true;
     }
-
 
     if (!trimmedCode) {
       setCodeEmptyError(true);
@@ -356,12 +337,10 @@ export default function App() {
       }
     }
 
-
     if (hasError) {
       setGeneralRegError(true);
       return;
     }
-
 
     const newUser: UserData = {
       username: trimmedUser,
@@ -371,62 +350,73 @@ export default function App() {
       entries: {}
     };
 
-
     const updated = {
       ...usersDb,
       [trimmedUser]: newUser
     };
-
-
     saveDb(updated);
     setCurrentUser(trimmedUser);
     setRegUsername('');
     setRegRole('');
     setRegGrade('');
     setRegClassroomCode('');
-    setCurrentPage('home');
+    setCurrentPage('classroom');
   };
-
 
   const handleLogSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) return;
-
-
     const todayISO = getTodayESTISO();
     const user = usersDb[currentUser];
-
-
     const todayEntry: DailyEntry = { date: todayISO, ...logFormValues };
-
-
     const newEntries = { ...(user.entries || {}), [todayISO]: todayEntry };
-
-
-    const sortedKeys = Object.keys(newEntries).sort();
-    if (sortedKeys.length > 28) {
-      const keysToRemove = sortedKeys.slice(0, sortedKeys.length - 28);
-      keysToRemove.forEach((k) => delete newEntries[k]);
-    }
-
 
     const updatedDb = {
       ...usersDb,
       [currentUser]: { ...user, entries: newEntries }
     };
     saveDb(updatedDb);
-    setLogSuccessMsg('Data logged successfully!');
+    setLogSuccessMsg('Data logged and synced to cloud successfully!');
     setTimeout(() => setLogSuccessMsg(''), 3000);
   };
 
+  const handleSurveySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const finalSurvey = {
+      ...studentSurvey,
+      studentUsername: currentUser || 'Anonymous',
+      classroomCode: getCurrentUserClassroomCode()
+    };
 
-  // --- Calculation Helpers ---
+    try {
+      const docId = `survey_${currentUser || 'anon'}_${Date.now()}`;
+      await setDoc(doc(db, 'surveys', docId), finalSurvey);
+      setSurveySuccessMsg('Thank you! Your survey responses have been submitted to Cloud Firestore.');
+      setTimeout(() => setSurveySuccessMsg(''), 4000);
+    } catch (err) {
+      console.error('Error submitting survey to cloud:', err);
+      alert('Failed to submit survey. Please check connection.');
+    }
+  };
+
+  const getAnswerCount = (category: keyof SurveyResponse, answerText: string) => {
+    const code = getCurrentUserClassroomCode().trim().toLowerCase();
+    return surveyData.filter((resp) => {
+      if ((resp.classroomCode || '').trim().toLowerCase() !== code) return false;
+      const val = resp[category];
+      if (Array.isArray(val)) {
+        return val.includes(answerText);
+      }
+      return val === answerText;
+    }).length;
+  };
+
+  // Calculation Helpers
   const getUserEntries = (): DailyEntry[] => {
     if (!currentUser || !usersDb[currentUser]) return [];
     const entriesObj = usersDb[currentUser].entries || {};
     return Object.values(entriesObj).sort((a, b) => a.date.localeCompare(b.date));
   };
-
 
   const getWeeklyAverage = (key: HabitKey): number => {
     const entries = getUserEntries();
@@ -435,28 +425,18 @@ export default function App() {
     const validValues = last7.map((e) => e[key]).filter((v): v is number => v !== undefined);
     if (validValues.length === 0) return 0;
     const sum = validValues.reduce((acc, curr) => acc + curr, 0);
-    return Math.round((sum / validValues.length) * 10) / 10;
+    return Math.round(sum / validValues.length);
   };
 
-
-  // EDIT 16: Classroom Weekly Average calculation
   const getClassroomWeeklyAverage = (key: HabitKey): number => {
     const code = getCurrentUserClassroomCode().trim().toLowerCase();
     if (code === 'n/a') return 0;
-
-
     const classroomStudents = Object.values(usersDb).filter(
       (u) => u.role === 'Student' && (u.classroomCode || '').trim().toLowerCase() === code
     );
-
-
     if (classroomStudents.length === 0) return 0;
-
-
     let studentAveragesSum = 0;
     let countedStudents = 0;
-
-
     classroomStudents.forEach((st) => {
       const entries = Object.values(st.entries || {}).sort((a, b) => a.date.localeCompare(b.date));
       if (entries.length > 0) {
@@ -469,23 +449,15 @@ export default function App() {
         }
       }
     });
-
-
     if (countedStudents === 0) return 0;
-
-
-    const avg = studentAveragesSum / countedStudents;
-    return Math.round(avg * 10) / 10;
+    return Math.round(studentAveragesSum / countedStudents);
   };
-
 
   const get28DayGrid = () => {
     const result: { dateStr: string; entry?: DailyEntry }[] = [];
     const todayESTStr = getTodayESTISO();
     const [yyyy, mm, dd] = todayESTStr.split('-').map(Number);
     const todayESTDate = new Date(yyyy, mm - 1, dd);
-
-
     for (let i = 27; i >= 0; i--) {
       const d = new Date(todayESTDate);
       d.setDate(d.getDate() - i);
@@ -493,16 +465,12 @@ export default function App() {
       const isoM = String(d.getMonth() + 1).padStart(2, '0');
       const isoD = String(d.getDate()).padStart(2, '0');
       const iso = `${isoY}-${isoM}-${isoD}`;
-
-
       const entry = currentUser && usersDb[currentUser] && usersDb[currentUser].entries ? usersDb[currentUser].entries[iso] : undefined;
       result.push({ dateStr: iso, entry });
     }
     return result;
   };
 
-
-  // EDIT 16: Yellow circle is made larger to closely match check and X size
   const renderStatusIcon = (key: HabitKey, avg: number, grade: string) => {
     const status = getHabitColor(key, avg, grade);
     if (status === 'green') return <span style={{ color: 'green', fontWeight: 'bold' }}>✓</span>;
@@ -510,13 +478,11 @@ export default function App() {
     return <span style={{ color: 'red', fontWeight: 'bold' }}>✕</span>;
   };
 
-
   // --- Theme Colors & Fonts ---
   const steelBlue = '#3E6F9B';
   const cream = '#FCFAF5';
   const charBlack = '#202124';
   const manropeFont = "'Manrope', sans-serif";
-
 
   const styles: Record<string, React.CSSProperties> = {
     appContainer: {
@@ -596,27 +562,49 @@ export default function App() {
       minHeight: '100vh'
     },
     sidebar: {
-      width: '220px',
+      width: '260px',
       backgroundColor: steelBlue,
       color: '#FFFFFF',
-      padding: '20px 10px',
+      padding: '20px 15px',
       display: 'flex',
       flexDirection: 'column',
-      alignItems: 'center'
+      alignItems: 'center',
+      gap: '10px',
+      boxSizing: 'border-box'
+    },
+    sidebarLogoBox: {
+      width: '100%',
+      maxWidth: '220px',
+      backgroundColor: 'transparent',
+      padding: '6px',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: '8px',
+      boxSizing: 'border-box'
+    },
+    sidebarLogoImage: {
+      width: '100%',
+      height: 'auto',
+      maxHeight: '80px',
+      objectFit: 'contain',
+      display: 'block'
     },
     navButton: {
       width: '100%',
+      maxWidth: '220px',
       backgroundColor: cream,
       color: charBlack,
       border: '1px solid transparent',
-      padding: '10px',
-      margin: '8px 0',
+      padding: '11px 12px',
       cursor: 'pointer',
       fontFamily: manropeFont,
-      fontSize: '15px',
+      fontSize: '14px',
       fontWeight: 600,
       textAlign: 'center',
-      borderRadius: '4px',
+      borderRadius: '8px',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+      boxSizing: 'border-box',
       transition: 'all 0.2s ease-in-out'
     },
     activeNavButton: {
@@ -670,24 +658,32 @@ export default function App() {
       color: steelBlue,
       fontWeight: 'bold',
       fontSize: '16px'
+    },
+    smallContentHeader: {
+      fontSize: '15px',
+      fontWeight: 'bold',
+      margin: '6px 0 3px 0'
+    },
+    smallContentText: {
+      fontSize: '14px',
+      margin: '0 0 8px 0',
+      lineHeight: '1.5'
+    },
+    halfHeightSpace: {
+      height: '10px'
     }
   };
 
-
   // --- LOGIN PAGE ---
-  if (currentPage === 'login') {
+  if (!currentUser && currentPage === 'login') {
     return (
       <div style={styles.appContainer}>
         <div style={{ padding: '40px 20px' }}>
           <div style={styles.centerHeader}>
             <img src={logo} alt="HealthyHabitsED Logo" style={styles.mainLogoImage} />
           </div>
-
-
           <div style={styles.authContainer}>
             <h2 style={{ color: charBlack, marginBottom: '5px', fontFamily: manropeFont }}>Login</h2>
-
-
             <form onSubmit={handleLogin}>
               <input
                 type="text"
@@ -696,21 +692,15 @@ export default function App() {
                 onChange={(e) => setLoginUsername(e.target.value)}
                 style={styles.inputBox}
               />
-
-
               {loginError && (
                 <div style={{ color: 'red', fontSize: '13px', marginTop: '4px', fontFamily: manropeFont }}>
                   {loginError}
                 </div>
               )}
-
-
               <button type="submit" style={styles.button}>
                 Login
               </button>
             </form>
-
-
             <div style={styles.linkText}>
               Don’t have an account?{' '}
               <span
@@ -729,21 +719,16 @@ export default function App() {
     );
   }
 
-
   // --- REGISTRATION PAGE ---
-  if (currentPage === 'register') {
+  if (!currentUser && currentPage === 'register') {
     return (
       <div style={styles.appContainer}>
         <div style={{ padding: '40px 20px' }}>
           <div style={styles.centerHeader}>
             <img src={logo} alt="HealthyHabitsED Logo" style={styles.mainLogoImage} />
           </div>
-
-
           <div style={styles.authContainer}>
             <h2 style={{ color: charBlack, marginBottom: '5px', fontFamily: manropeFont }}>Register</h2>
-
-
             <form onSubmit={handleRegister}>
               <div style={{ ...styles.sectionHeadingBlue, marginTop: '15px' }}>Are you a teacher or student?</div>
               <div style={{ fontFamily: manropeFont, fontSize: '14px' }}>
@@ -782,7 +767,6 @@ export default function App() {
                 </div>
               </div>
 
-
               <div style={styles.sectionHeadingBlue}>What grade is your classroom?</div>
               <div style={{ fontFamily: manropeFont }}>
                 <select
@@ -809,7 +793,6 @@ export default function App() {
                 </div>
               </div>
 
-
               <div style={styles.sectionHeadingBlue}>What is your username?</div>
               <div style={{ fontFamily: manropeFont }}>
                 <input
@@ -833,7 +816,6 @@ export default function App() {
                   </div>
                 )}
               </div>
-
 
               <div style={styles.sectionHeadingBlue}>What is your classroom code?</div>
               <div style={{ fontFamily: manropeFont }}>
@@ -859,11 +841,9 @@ export default function App() {
                 )}
               </div>
 
-
               <button type="submit" style={styles.button}>
                 Register
               </button>
-
 
               {generalRegError && (
                 <div style={{ color: 'red', fontSize: '13px', marginTop: '8px', fontWeight: 'bold', textAlign: 'center' }}>
@@ -871,7 +851,6 @@ export default function App() {
                 </div>
               )}
             </form>
-
 
             <div style={styles.linkText}>
               Already have an account?{' '}
@@ -892,306 +871,372 @@ export default function App() {
     );
   }
 
-
-  // --- DASHBOARD WRAPPER ---
-  const currentUserGrade = getCurrentUserGrade();
+  // --- DASHBOARD / MAIN APP WRAPPER ---
+  const currentGrade = getCurrentUserGrade();
+  const habitsConfig = getHabitsConfig(currentGrade);
+  const currentUserRole = getCurrentUserRole();
   const currentUserClassroom = getCurrentUserClassroomCode();
-  const habitsConfig = getHabitsConfig(currentUserGrade);
-
 
   return (
-    <div style={styles.appContainer}>
-      <div style={styles.dashboardLayout}>
-        <div style={styles.sidebar}>
-          <div style={{ width: '100%', display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
-            <img
-              src={logo}
-              alt="HealthyHabitsED Logo"
-              style={{
-                maxWidth: '120px',
-                width: '100%',
-                height: 'auto',
-                display: 'block',
-                objectFit: 'contain'
-              }}
-            />
+    <div style={styles.dashboardLayout}>
+      {/* Sidebar Navigation */}
+      <div style={styles.sidebar}>
+        <div style={styles.sidebarLogoBox}>
+          <img src={sidebarLogo} alt="Sidebar Logo" style={styles.sidebarLogoImage} />
+        </div>
+        <button
+          style={{
+            ...styles.navButton,
+            ...(currentPage === 'classroom' ? styles.activeNavButton : {})
+          }}
+          onClick={() => setCurrentPage('classroom')}
+        >
+          My Classroom Scorecard
+        </button>
+        <button
+          style={{
+            ...styles.navButton,
+            ...(currentPage === 'home' ? styles.activeNavButton : {})
+          }}
+          onClick={() => setCurrentPage('home')}
+        >
+          My Scorecard
+        </button>
+        <button
+          style={{
+            ...styles.navButton,
+            ...(currentPage === 'log' ? styles.activeNavButton : {})
+          }}
+          onClick={() => setCurrentPage('log')}
+        >
+          My Daily Data Log
+        </button>
+        <button
+          style={{
+            ...styles.navButton,
+            ...(currentPage === 'view' ? styles.activeNavButton : {})
+          }}
+          onClick={() => setCurrentPage('view')}
+        >
+          My Daily Data View
+        </button>
+        <button
+          style={{
+            ...styles.navButton,
+            ...(currentPage === 'learning' ? styles.activeNavButton : {})
+          }}
+          onClick={() => setCurrentPage('learning')}
+        >
+          Learning Center
+        </button>
+        <button
+          style={{
+            ...styles.navButton,
+            ...(currentPage === 'resources' ? styles.activeNavButton : {})
+          }}
+          onClick={() => setCurrentPage('resources')}
+        >
+          Community Resources
+        </button>
+        <button
+          style={{
+            ...styles.navButton,
+            ...(currentPage === 'survey' ? styles.activeNavButton : {})
+          }}
+          onClick={() => setCurrentPage('survey')}
+        >
+          Survey
+        </button>
+        {currentUserRole === 'Teacher' && (
+          <button
+            style={{
+              ...styles.navButton,
+              ...(currentPage === 'survey-results' ? styles.activeNavButton : {})
+            }}
+            onClick={() => setCurrentPage('survey-results')}
+          >
+            Survey Results
+          </button>
+        )}
+        <button
+          style={{
+            ...styles.navButton,
+            marginTop: 'auto',
+            backgroundColor: '#d9534f',
+            color: '#ffffff'
+          }}
+          onClick={() => {
+            setCurrentUser(null);
+            localStorage.removeItem('healthy_habits_current_user');
+            setCurrentPage('login');
+          }}
+        >
+          Log Out
+        </button>
+      </div>
+
+      {/* Main Content Area */}
+      <div style={styles.mainContent}>
+        {/* Header section matching Edits 1-21 specifications */}
+        <div style={{ textAlign: 'left', marginBottom: '25px' }}>
+          <img src={logo} alt="HealthyHabitsED Logo" style={styles.headerLogoImage} />
+          <div style={{ color: charBlack, fontFamily: manropeFont, fontSize: '16px', lineHeight: '1.5' }}>
+            My Status: {currentUserRole}
           </div>
-
-
-          {/* EDIT 16 Requirement: My Classroom Scorecard button at top */}
-          <button
-            style={{
-              ...styles.navButton,
-              ...(currentPage === 'classroom' ? styles.activeNavButton : {})
-            }}
-            onClick={() => setCurrentPage('classroom')}
-          >
-            My Classroom Scorecard
-          </button>
-
-
-          <button
-            style={{
-              ...styles.navButton,
-              ...(currentPage === 'home' ? styles.activeNavButton : {})
-            }}
-            onClick={() => setCurrentPage('home')}
-          >
-            My Weekly Scorecard
-          </button>
-
-
-          <button
-            style={{
-              ...styles.navButton,
-              ...(currentPage === 'log' ? styles.activeNavButton : {})
-            }}
-            onClick={() => setCurrentPage('log')}
-          >
-            Log My Daily Data
-          </button>
-
-
-          <button
-            style={{
-              ...styles.navButton,
-              ...(currentPage === 'view' ? styles.activeNavButton : {})
-            }}
-            onClick={() => setCurrentPage('view')}
-          >
-            View My Daily Data
-          </button>
-
-
-          <button
-            style={{ ...styles.navButton, marginTop: 'auto', opacity: 0.9 }}
-            onClick={() => {
-              setCurrentUser(null);
-              setCurrentPage('login');
-            }}
-          >
-            Log Out
-          </button>
+          <div style={{ color: charBlack, fontFamily: manropeFont, fontSize: '16px', lineHeight: '1.5' }}>
+            My Classroom: {currentUserClassroom}
+          </div>
+          <div style={{ color: charBlack, fontFamily: manropeFont, fontSize: '16px', lineHeight: '1.5' }}>
+            My Grade: {currentGrade}
+          </div>
+          <div style={{ color: charBlack, fontFamily: manropeFont, fontSize: '16px', lineHeight: '1.5' }}>
+            Today's Date: {getTodayESTFormatted()}
+          </div>
         </div>
 
-
-        <div style={styles.mainContent}>
-          {/* Top header image and info */}
-          <div style={{ textAlign: 'left', marginBottom: '25px' }}>
-            <img src={logo} alt="HealthyHabitsED Logo" style={styles.headerLogoImage} />
-
-
-            {/* EDIT 16 Requirement: Add My Classroom above My Grade */}
-            <div style={{ color: charBlack, fontFamily: manropeFont, fontSize: '16px' }}>
-              My Classroom: {currentUserClassroom}
-            </div>
-            <div style={{ color: charBlack, fontFamily: manropeFont, fontSize: '16px' }}>
-              My Grade: {currentUserGrade}
-            </div>
-            <div style={{ color: charBlack, fontFamily: manropeFont, fontSize: '16px' }}>
-              Today's Date: {getTodayESTFormatted()}
-            </div>
-          </div>
-
-
-          {/* EDIT 16 Requirement: My Classroom Scorecard Page */}
-          {currentPage === 'classroom' && (
-            <div style={{ textAlign: 'left', maxWidth: '700px' }}>
-              <h2 style={{ color: steelBlue, fontFamily: manropeFont }}>
-                My Classroom’s Healthy Habits Scorecard (Weekly Average)
-              </h2>
-
-
-              <table style={styles.logTable}>
-                <thead>
-                  <tr>
-                    <th style={styles.logTableHeaderCell}>Habit</th>
-                    <th style={styles.logTableHeaderCell}>Goal</th>
-                    <th style={styles.logTableHeaderCell}>Weekly Average</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {habitsConfig.map((h) => {
-                    const avg = getClassroomWeeklyAverage(h.key);
-                    return (
-                      <tr key={h.key}>
-                        <td style={styles.logTableCell}>
-                          {h.icon} {h.label}
-                        </td>
-                        <td style={styles.logTableCell}>{h.goal}</td>
-                        <td style={styles.logTableCell}>
-                          {avg} <span style={{ marginLeft: '10px' }}>{renderStatusIcon(h.key, avg, currentUserGrade)}</span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-
-          {/* Home / Weekly Scorecard */}
-          {currentPage === 'home' && (
-            <div style={{ textAlign: 'left', maxWidth: '700px' }}>
-              <h2 style={{ color: steelBlue, fontFamily: manropeFont }}>
-                My Healthy Habits Scorecard (Weekly Average)
-              </h2>
-
-
-              <table style={styles.logTable}>
-                <thead>
-                  <tr>
-                    <th style={styles.logTableHeaderCell}>Habit</th>
-                    <th style={styles.logTableHeaderCell}>Goal</th>
-                    <th style={styles.logTableHeaderCell}>Weekly Average</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {habitsConfig.map((h) => {
-                    const avg = getWeeklyAverage(h.key);
-                    return (
-                      <tr key={h.key}>
-                        <td style={styles.logTableCell}>
-                          {h.icon} {h.label}
-                        </td>
-                        <td style={styles.logTableCell}>{h.goal}</td>
-                        <td style={styles.logTableCell}>
-                          {avg} <span style={{ marginLeft: '10px' }}>{renderStatusIcon(h.key, avg, currentUserGrade)}</span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-
-          {/* Log My Daily Data Page */}
-          {currentPage === 'log' && (
-            <div style={{ textAlign: 'left', maxWidth: '700px' }}>
-              <h2 style={{ color: steelBlue, fontFamily: manropeFont }}>Log My Daily Data</h2>
-
-
-              <form onSubmit={handleLogSubmit}>
-                <table style={styles.logTable}>
-                  <thead>
-                    <tr>
-                      <th style={styles.logTableHeaderCell}>Habit</th>
-                      <th style={styles.logTableHeaderCell}>Selection</th>
-                      <th style={styles.logTableHeaderCell}>Goal</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {habitsConfig.map((h) => (
-                      <tr key={h.key}>
-                        <td style={styles.logTableCell}>
-                          {h.icon} {h.label}
-                        </td>
-                        <td style={styles.logTableCell}>
-                          <select
-                            value={logFormValues[h.key]}
-                            onChange={(e) =>
-                              setLogFormValues({
-                                ...logFormValues,
-                                [h.key]: Number(e.target.value)
-                              })
-                            }
-                            style={{ ...styles.inputBox, width: '130px', margin: 0 }}
-                          >
-                            {h.selections.map((val) => (
-                              <option key={val} value={val}>
-                                {h.selectionLabels && h.selectionLabels[val]
-                                  ? h.selectionLabels[val]
-                                  : val}
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-                        <td style={styles.logTableCell}>{h.goal}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-
-
-                <button type="submit" style={{ ...styles.button, width: '200px', marginTop: '20px' }}>
-                  Submit
-                </button>
-              </form>
-
-
-              {logSuccessMsg && (
-                <div style={{ color: 'green', marginTop: '10px', fontWeight: 'bold' }}>
-                  {logSuccessMsg}
-                </div>
-              )}
-            </div>
-          )}
-
-
-          {/* View My Daily Data Page */}
-          {currentPage === 'view' && (
-            <div style={{ textAlign: 'left' }}>
-              <h2 style={{ color: steelBlue, fontFamily: manropeFont }}>View My Daily Data (4-Week)</h2>
-
-
-              <div style={{ marginBottom: '20px', fontSize: '16px', fontFamily: manropeFont }}>
-                <span style={{ color: steelBlue, fontWeight: 'bold' }}>Habit: </span>
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value as HabitKey)}
-                  style={{ ...styles.inputBox, width: '240px', display: 'inline-block', margin: '0 15px 0 5px', color: charBlack }}
-                >
-                  {/* EDIT 16 Requirement: Only include the text before the comma */}
-                  {habitsConfig.map((h) => (
-                    <option key={h.key} value={h.key} style={{ color: charBlack }}>
-                      {h.label}
-                    </option>
-                  ))}
-                </select>
-
-
-                <span style={{ color: steelBlue, fontWeight: 'bold' }}>Goal: </span>
-                <span style={{ color: charBlack }}>
-                  {habitsConfig.find((h) => h.key === selectedCategory)?.goal}
-                </span>
-              </div>
-
-
-              {/* 28-Day Calendar Grid */}
-              <div style={styles.gridTable}>
-                {get28DayGrid().map(({ dateStr, entry }) => {
-                  const val = entry ? entry[selectedCategory] : undefined;
-                  let fontColor = charBlack;
-
-
-                  if (val !== undefined) {
-                    const status = getHabitColor(selectedCategory, val, currentUserGrade);
-                    if (status === 'green') fontColor = 'green';
-                    else if (status === 'yellow') fontColor = '#D4AC0D';
-                    else fontColor = 'red';
-                  }
-
-
+        {/* Classroom Scorecard View */}
+        {currentPage === 'classroom' && (
+          <div style={{ textAlign: 'left', maxWidth: '700px' }}>
+            <h2 style={{ color: steelBlue, fontFamily: manropeFont, fontSize: '24px', fontWeight: 'bold' }}>
+              My Classroom’s Scorecard (Weekly Average)
+            </h2>
+            <table style={styles.logTable}>
+              <thead>
+                <tr>
+                  <th style={styles.logTableHeaderCell}>Habit</th>
+                  <th style={styles.logTableHeaderCell}>Goal</th>
+                  <th style={styles.logTableHeaderCell}>Weekly Average</th>
+                </tr>
+              </thead>
+              <tbody>
+                {habitsConfig.map((h) => {
+                  const avg = getClassroomWeeklyAverage(h.key);
                   return (
-                    <div key={dateStr} style={styles.gridCell}>
-                      <div style={{ fontSize: '11px', color: '#666', marginBottom: '4px' }}>
-                        {formatDateToMDY(dateStr)}
-                      </div>
-                      <div style={{ fontSize: '16px', fontWeight: 'bold', color: fontColor }}>
-                        {val !== undefined ? val : 'Not Logged'}
-                      </div>
-                    </div>
+                    <tr key={h.key}>
+                      <td style={styles.logTableCell}>{h.icon} {h.label}</td>
+                      <td style={styles.logTableCell}>{h.goal}</td>
+                      <td style={styles.logTableCell}>
+                        {avg} <span style={{ marginLeft: '10px' }}>{renderStatusIcon(h.key, avg, currentGrade)}</span>
+                      </td>
+                    </tr>
                   );
                 })}
-              </div>
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Personal Scorecard View */}
+        {currentPage === 'home' && (
+          <div style={{ textAlign: 'left', maxWidth: '700px' }}>
+            <h2 style={{ color: steelBlue, fontFamily: manropeFont, fontSize: '24px', fontWeight: 'bold' }}>
+              My Scorecard (Weekly Average)
+            </h2>
+            <table style={styles.logTable}>
+              <thead>
+                <tr>
+                  <th style={styles.logTableHeaderCell}>Habit</th>
+                  <th style={styles.logTableHeaderCell}>Goal</th>
+                  <th style={styles.logTableHeaderCell}>Weekly Average</th>
+                </tr>
+              </thead>
+              <tbody>
+                {habitsConfig.map((h) => {
+                  const avg = getWeeklyAverage(h.key);
+                  return (
+                    <tr key={h.key}>
+                      <td style={styles.logTableCell}>{h.icon} {h.label}</td>
+                      <td style={styles.logTableCell}>{h.goal}</td>
+                      <td style={styles.logTableCell}>
+                        {avg} <span style={{ marginLeft: '10px' }}>{renderStatusIcon(h.key, avg, currentGrade)}</span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Daily Data Log View */}
+        {currentPage === 'log' && (
+          <div style={{ textAlign: 'left', maxWidth: '700px' }}>
+            <h2 style={{ color: steelBlue, fontFamily: manropeFont, fontSize: '24px', fontWeight: 'bold' }}>My Daily Data Log</h2>
+            <form onSubmit={handleLogSubmit}>
+              <table style={styles.logTable}>
+                <thead>
+                  <tr>
+                    <th style={styles.logTableHeaderCell}>Habit</th>
+                    <th style={styles.logTableHeaderCell}>Selection</th>
+                    <th style={styles.logTableHeaderCell}>Goal</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {habitsConfig.map((h) => (
+                    <tr key={h.key}>
+                      <td style={styles.logTableCell}>{h.icon} {h.label}</td>
+                      <td style={styles.logTableCell}>
+                        <select
+                          value={logFormValues[h.key] ?? h.selections[0]}
+                          onChange={(e) =>
+                            setLogFormValues({
+                              ...logFormValues,
+                              [h.key]: Number(e.target.value)
+                            })
+                          }
+                          style={{ ...styles.inputBox, width: '130px', margin: 0 }}
+                        >
+                          {h.selections.map((val) => (
+                            <option key={val} value={val}>
+                              {h.selectionLabels && h.selectionLabels[val] ? h.selectionLabels[val] : val}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td style={styles.logTableCell}>{h.goal}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <button type="submit" style={{ ...styles.button, width: '200px', marginTop: '20px' }}>
+                Submit
+              </button>
+            </form>
+            {logSuccessMsg && <div style={{ color: 'green', marginTop: '10px', fontWeight: 'bold' }}>{logSuccessMsg}</div>}
+          </div>
+        )}
+
+        {/* Daily Data View (28-day grid) */}
+        {currentPage === 'view' && (
+          <div style={{ textAlign: 'left' }}>
+            <h2 style={{ color: steelBlue, fontFamily: manropeFont, fontSize: '24px', fontWeight: 'bold' }}>My Daily Data View (4-Week)</h2>
+            <div style={{ marginBottom: '20px', fontSize: '16px', fontFamily: manropeFont }}>
+              <span style={{ color: steelBlue, fontWeight: 'bold' }}>Habit: </span>
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value as HabitKey)}
+                style={{ ...styles.inputBox, width: '240px', display: 'inline-block', margin: '0 15px 0 5px', color: charBlack }}
+              >
+                {habitsConfig.map((h) => (
+                  <option key={h.key} value={h.key} style={{ color: charBlack }}>
+                    {h.label}
+                  </option>
+                ))}
+              </select>
+              <span style={{ color: steelBlue, fontWeight: 'bold' }}>Goal: </span>
+              <span style={{ color: charBlack }}>
+                {habitsConfig.find((h) => h.key === selectedCategory)?.goal}
+              </span>
             </div>
-          )}
-        </div>
+
+            <div style={styles.gridTable}>
+              {get28DayGrid().map(({ dateStr, entry }) => {
+                const val = entry ? entry[selectedCategory] : undefined;
+                let fontColor = charBlack;
+                if (val !== undefined) {
+                  const status = getHabitColor(selectedCategory, val, currentGrade);
+                  if (status === 'green') fontColor = 'green';
+                  else if (status === 'yellow') fontColor = '#D4AC0D';
+                  else fontColor = 'red';
+                }
+                return (
+                  <div key={dateStr} style={styles.gridCell}>
+                    <div style={{ fontSize: '11px', color: '#666', marginBottom: '4px' }}>
+                      {formatDateToMDY(dateStr)}
+                    </div>
+                    <div style={{ fontSize: '16px', fontWeight: 'bold', color: fontColor }}>
+                      {val !== undefined ? val : 'Not Logged'}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Learning Center (Formatted per Edits) */}
+        {currentPage === 'learning' && (
+          <div style={{ textAlign: 'left', maxWidth: '800px' }}>
+            <h2 style={{ color: steelBlue, fontFamily: manropeFont, fontSize: '24px', fontWeight: 'bold', marginBottom: '15px' }}>
+              Learning Center
+            </h2>
+            <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '15px', marginBottom: '6px' }}>Sleep</h3>
+            <p style={styles.smallContentText}>
+              Sleep is when your brain and body recharge so you can learn, grow, and feel your best. Getting the right amount of sleep every night helps you succeed in school, sports, and everyday life.
+            </p>
+            <h4 style={styles.smallContentHeader}>1. Your Brain Gets Stronger</h4>
+            <p style={styles.smallContentText}>While you sleep, your brain organizes what you learned during the day and stores it as memories. Good sleep helps you focus, solve problems, and remember what you study.</p>
+            <div style={styles.halfHeightSpace} />
+
+            <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '15px', marginBottom: '6px' }}>Physical Activity</h3>
+            <p style={styles.smallContentText}>
+              Physical activity is any movement that gets your body working, from playing outside to sports, dancing, biking, or walking. Aim for about 60 minutes of activity each day.
+            </p>
+            <div style={styles.halfHeightSpace} />
+
+            <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '15px', marginBottom: '6px' }}>Water</h3>
+            <p style={styles.smallContentText}>
+              Water is the best drink for your body because every organ depends on it to work properly. Staying hydrated helps you feel energized and ready to learn.
+            </p>
+          </div>
+        )}
+
+        {/* Community Resources */}
+        {currentPage === 'resources' && (
+          <div style={{ textAlign: 'left', maxWidth: '700px' }}>
+            <h2 style={{ color: steelBlue, fontSize: '24px', marginBottom: '15px' }}>Community Resources</h2>
+            <div style={{ background: '#FFF', padding: '15px', borderRadius: '8px', borderLeft: `4px solid ${steelBlue}`, marginBottom: '15px' }}>
+              <h4 style={{ margin: '0 0 5px 0' }}>🍎 Free Student Meals Program</h4>
+              <p style={{ margin: 0, fontSize: '14px', color: '#555' }}>Provides free breakfast and lunch to eligible students throughout the school year and summer months.</p>
+            </div>
+            <div style={{ background: '#FFF', padding: '15px', borderRadius: '8px', borderLeft: `4px solid ${steelBlue}` }}>
+              <h4 style={{ margin: '0 0 5px 0' }}>🏞️ Local Parks & Recreation Trails</h4>
+              <p style={{ margin: 0, fontSize: '14px', color: '#555' }}>Access free public parks, walking trails, and basketball courts in your neighborhood.</p>
+            </div>
+          </div>
+        )}
+
+        {/* Survey */}
+        {currentPage === 'survey' && (
+          <div style={{ textAlign: 'left', maxWidth: '700px' }}>
+            <h2 style={{ color: steelBlue, fontSize: '24px', marginBottom: '15px' }}>Student Healthy Habits Survey</h2>
+            {surveySuccessMsg && <div style={{ color: 'green', fontWeight: 'bold', marginBottom: '10px' }}>{surveySuccessMsg}</div>}
+            <form onSubmit={handleSurveySubmit} style={{ backgroundColor: '#FFF', padding: '25px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div>
+                <p style={{ fontWeight: 'bold', marginBottom: '8px' }}>1. Which healthy habit is the hardest for you to practice consistently?</p>
+                {['Getting enough sleep', 'Drinking enough water', 'Being physically active'].map((opt) => (
+                  <label key={opt} style={{ display: 'block', fontSize: '14px', marginBottom: '4px', cursor: 'pointer' }}>
+                    <input
+                      type="radio"
+                      name="hardestHabit"
+                      value={opt}
+                      checked={studentSurvey.hardestHabit === opt}
+                      onChange={(e) => setStudentSurvey({ ...studentSurvey, hardestHabit: e.target.value })}
+                    />{' '}
+                    {opt}
+                  </label>
+                ))}
+              </div>
+              <button type="submit" style={{ ...styles.button, width: '200px' }}>Submit Survey</button>
+            </form>
+          </div>
+        )}
+
+        {/* Survey Results (Teacher View) */}
+        {currentPage === 'survey-results' && currentUserRole === 'Teacher' && (
+          <div style={{ textAlign: 'left', maxWidth: '700px' }}>
+            <h2 style={{ color: steelBlue, fontSize: '24px', marginBottom: '15px' }}>Classroom Survey Results</h2>
+            <div style={{ backgroundColor: '#FFF', padding: '20px', borderRadius: '8px' }}>
+              <h4 style={{ color: steelBlue, marginBottom: '10px' }}>Top Hardest Habits Reported:</h4>
+              <ul style={{ paddingLeft: '20px', lineHeight: '1.8' }}>
+                <li>Getting enough sleep: <strong>{getAnswerCount('hardestHabit', 'Getting enough sleep')} responses</strong></li>
+                <li>Drinking enough water: <strong>{getAnswerCount('hardestHabit', 'Drinking enough water')} responses</strong></li>
+                <li>Being physically active: <strong>{getAnswerCount('hardestHabit', 'Being physically active')} responses</strong></li>
+              </ul>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 }
-
