@@ -4,6 +4,29 @@ import { collection, doc, setDoc, onSnapshot } from 'firebase/firestore';
 import logo from './assets/logo.png';
 import sidebarLogo from './assets/new-sidebar-logo.png';
 
+// --- BACKGROUND LOOKUP TABLES (Lookup 1, Lookup 2, Lookup 3) ---
+const Lookup1: string[][] = [
+  ["Grade", "Sleep", "Physical Activity", "Water", "Fruits & Veg", "Whole Foods", "UPF", "Sugary Drinks", "Screen Time", "Outdoor Time", "Mindfulness", "Reading"],
+  ["K - 5th", "9-12 hrs", "60 mins", "6-9 cups", ">= 5 servings", ">= 80%", "<= 20%", "0 drinks", "<= 2 hrs", ">= 60 mins", "10 mins", "20 mins"],
+  ["6th - 8th", "8-10 hrs", "60 mins", "8-11 cups", ">= 5 servings", ">= 80%", "<= 20%", "0-1 drinks", "<= 2 hrs", ">= 60 mins", "10 mins", "20 mins"],
+  ["9th - 12th", "8-10 hrs", "60 mins", "8-11 cups", ">= 5 servings", ">= 80%", "<= 20%", "0-1 drinks", "<= 2 hrs", ">= 60 mins", "10 mins", "20 mins"],
+  ["Teacher", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A"]
+];
+
+const Lookup2: string[][] = [
+  ["Grade", "Water Min", "Water Target", "Water Max", "Sleep Min", "Sleep Target", "Sleep Max", "FruitMin", "Fruit Target", "Fruit Max", "WholeMin", "Whole Target", "Whole Max", "UPF Min", "UPF Target", "UPF Max"],
+  ["K - 5th", "6", "8", "9", "9", "10", "12", "3", "5", "8", "60%", "80%", "100%", "0%", "10%", "20%"],
+  ["6th - 8th", "8", "10", "11", "8", "9", "10", "3", "5", "8", "60%", "80%", "100%", "0%", "10%", "20%"],
+  ["9th - 12th", "8", "10", "11", "8", "9", "10", "3", "5", "8", "60%", "80%", "100%", "0%", "10%", "20%"]
+];
+
+const Lookup3: string[][] = [
+  ["Grade", "Activity Min", "Activity Target", "Activity Max", "Screen Min", "Screen Target", "Screen Max", "Outdoor Min", "Outdoor Target", "Outdoor Max", "MindMin", "Mind Target", "Mind Max", "ReadMin", "Read Target", "Read Max", "SugarMin", "Sugar Target", "Sugar Max"],
+  ["K - 5th", "30", "60", "120", "0", "1", "2", "30", "60", "120", "5", "10", "20", "10", "20", "45", "0", "0", "1"],
+  ["6th - 8th", "30", "60", "120", "0", "1", "2", "30", "60", "120", "5", "10", "20", "10", "20", "45", "0", "0", "1"],
+  ["9th - 12th", "30", "60", "120", "0", "1", "2", "30", "60", "120", "5", "10", "20", "10", "20", "45", "0", "0", "1"]
+];
+
 // --- Habit Types & Definitions ---
 export type HabitKey =
   | 'sleep'
@@ -230,36 +253,106 @@ export default function App() {
     return usersDb[currentUser].classroomCode || 'N/A';
   };
 
-  // Habit Configs & Grading Logic
-  const getHabitsConfig = (grade: string): HabitConfig[] => {
-    if (grade === 'K - 5th') {
-      return [
-        { key: 'sleep', label: 'Sleep', icon: '😴', selections: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], selectionLabels: { 12: '12+' }, goal: '9 - 12 hours / night' },
-        { key: 'physicalActivity', label: 'Physical Activity', icon: '🏃', selections: [0, 15, 30, 45, 60], selectionLabels: { 60: '60+' }, goal: '60+ minutes / day' },
-        { key: 'water', label: 'Water', icon: '💧', selections: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], selectionLabels: { 9: '9+' }, goal: '6 - 9 cups / day' },
-        { key: 'fruitsVeg', label: 'Fruits & Vegetables', icon: '🍎', selections: [0, 1, 2, 3, 4, 5], selectionLabels: { 5: '5+' }, goal: '>= 5 servings / day' },
-        { key: 'wholeFoods', label: 'Whole Foods', icon: '🥗', selections: [0, 10, 20, 30, 40, 50, 60, 70, 80], selectionLabels: { 80: '80%+' }, goal: '>= 80% / day' },
-        { key: 'upf', label: 'Ultra-Processed Foods', icon: '🍔', selections: [0, 10, 20, 30, 40], selectionLabels: { 40: '40%+' }, goal: '<= 20% / day' },
-        { key: 'sugaryDrinks', label: 'Sugary Drinks', icon: '🧃', selections: [0, 1, 2], selectionLabels: { 2: '2+' }, goal: '0 drinks / day' },
-        { key: 'mood', label: 'Mood', icon: '⭐', selections: [1, 2, 3], goal: '3 stars' },
-      ];
-    } else {
-      return [
-        { key: 'sleep', label: 'Sleep', icon: '😴', selections: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], selectionLabels: { 10: '10+' }, goal: '8 - 10 hours / night' },
-        { key: 'physicalActivity', label: 'Physical Activity', icon: '🏃', selections: [0, 15, 30, 45, 60], selectionLabels: { 60: '60+' }, goal: '60+ minutes / day' },
-        { key: 'water', label: 'Water', icon: '💧', selections: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], selectionLabels: { 11: '11+' }, goal: '8 - 11 cups / day' },
-        { key: 'fruitsVeg', label: 'Fruits & Vegetables', icon: '🍎', selections: [0, 1, 2, 3, 4, 5], selectionLabels: { 5: '5+' }, goal: '>= 5 servings / day' },
-        { key: 'wholeFoods', label: 'Whole Foods', icon: '🥗', selections: [0, 10, 20, 30, 40, 50, 60, 70, 80], selectionLabels: { 80: '80%+' }, goal: '>= 80% / day' },
-        { key: 'upf', label: 'Ultra-Processed Foods', icon: '🍔', selections: [0, 10, 20, 30, 40], selectionLabels: { 40: '40%+' }, goal: '<= 20% / day' },
-        { key: 'sugaryDrinks', label: 'Sugary Drinks', icon: '🧃', selections: [0, 1, 2], selectionLabels: { 2: '2+' }, goal: '0 - 1 drinks / day' },
-        { key: 'mood', label: 'Mood', icon: '⭐', selections: [1, 2, 3], goal: '3 stars' },
-      ];
-    }
+  // --- Dynamic Lookup Table Hook Functions ---
+  const getGoalFromLookup1 = (habitKey: HabitKey): string => {
+    const headers = Lookup1[0];
+    const habitLabelMap: Record<HabitKey, string> = {
+      sleep: 'Sleep',
+      physicalActivity: 'Physical Activity',
+      water: 'Water',
+      fruitsVeg: 'Fruits & Veg',
+      wholeFoods: 'Whole Foods',
+      upf: 'UPF',
+      sugaryDrinks: 'Sugary Drinks',
+      mood: 'Mindfulness'
+    };
+
+    const targetHeader = habitLabelMap[habitKey];
+    const colIdx = headers.findIndex(h => h.toLowerCase() === (targetHeader || '').toLowerCase());
+    if (colIdx === -1) return 'N/A';
+
+    const grade = getCurrentUserGrade();
+    const role = getCurrentUserRole();
+
+    let rowIdx = 1; // Default K-5th
+    if (grade === '6th - 8th') rowIdx = 2;
+    if (grade === '9th - 12th') rowIdx = 3;
+    if (role === 'Teacher') rowIdx = 4;
+
+    return Lookup1[rowIdx]?.[colIdx] || 'N/A';
   };
 
-  const getHabitColor = (key: HabitKey, val: number, _grade: string): 'red' | 'yellow' | 'green' => {
+  // Dynamic Lookup 2 & 3 evaluation helpers
+  const getLookup2Metric = (metricName: string, grade: string): number => {
+    let rowIdx = 1;
+    if (grade === '6th - 8th') rowIdx = 2;
+    if (grade === '9th - 12th') rowIdx = 3;
+    const headers = Lookup2[0];
+    const colIdx = headers.findIndex(h => h.toLowerCase() === metricName.toLowerCase());
+    if (colIdx === -1) return 0;
+    const valStr = Lookup2[rowIdx]?.[colIdx] || '0';
+    return parseFloat(valStr.replace('%', '')) || 0;
+  };
+
+  const getLookup3Metric = (metricName: string, grade: string): number => {
+    let rowIdx = 1;
+    if (grade === '6th - 8th') rowIdx = 2;
+    if (grade === '9th - 12th') rowIdx = 3;
+    const headers = Lookup3[0];
+    const colIdx = headers.findIndex(h => h.toLowerCase() === metricName.toLowerCase());
+    if (colIdx === -1) return 0;
+    const valStr = Lookup3[rowIdx]?.[colIdx] || '0';
+    return parseFloat(valStr.replace('%', '')) || 0;
+  };
+
+  // Habit Configs Dynamically Generated from Lookup Tables
+  const getHabitsConfig = (grade: string): HabitConfig[] => {
+    const isElementary = grade === 'K - 5th';
+    return [
+      { key: 'sleep', label: 'Sleep', icon: '😴', selections: isElementary ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], selectionLabels: isElementary ? { 12: '12+' } : { 10: '10+' }, goal: getGoalFromLookup1('sleep') },
+      { key: 'physicalActivity', label: 'Physical Activity', icon: '🏃', selections: [0, 15, 30, 45, 60], selectionLabels: { 60: '60+' }, goal: getGoalFromLookup1('physicalActivity') },
+      { key: 'water', label: 'Water', icon: '💧', selections: isElementary ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], selectionLabels: isElementary ? { 9: '9+' } : { 11: '11+' }, goal: getGoalFromLookup1('water') },
+      { key: 'fruitsVeg', label: 'Fruits & Vegetables', icon: '🍎', selections: [0, 1, 2, 3, 4, 5], selectionLabels: { 5: '5+' }, goal: getGoalFromLookup1('fruitsVeg') },
+      { key: 'wholeFoods', label: 'Whole Foods', icon: '🥗', selections: [0, 10, 20, 30, 40, 50, 60, 70, 80], selectionLabels: { 80: '80+' }, goal: getGoalFromLookup1('wholeFoods') },
+      { key: 'upf', label: 'Ultra-Processed Foods', icon: '🍔', selections: [0, 10, 20, 30, 40], selectionLabels: { 40: '40+' }, goal: getGoalFromLookup1('upf') },
+      { key: 'sugaryDrinks', label: 'Sugary Drinks', icon: '🧃', selections: [0, 1, 2], selectionLabels: { 2: '2+' }, goal: getGoalFromLookup1('sugaryDrinks') },
+      { key: 'mood', label: 'Mood', icon: '⭐', selections: [1, 2, 3], goal: getGoalFromLookup1('mood') },
+    ];
+  };
+
+  const getHabitColor = (key: HabitKey, val: number, grade: string): 'red' | 'yellow' | 'green' => {
+    if (key === 'water') {
+      const target = getLookup2Metric('Water Target', grade);
+      const min = getLookup2Metric('Water Min', grade);
+      if (val >= target) return 'green';
+      if (val >= min) return 'yellow';
+      return 'red';
+    }
+    if (key === 'sleep') {
+      const target = getLookup2Metric('Sleep Target', grade);
+      const min = getLookup2Metric('Sleep Min', grade);
+      if (val >= target) return 'green';
+      if (val >= min) return 'yellow';
+      return 'red';
+    }
+    if (key === 'fruitsVeg') {
+      const target = getLookup2Metric('Fruit Target', grade);
+      const min = getLookup2Metric('FruitMin', grade);
+      if (val >= target) return 'green';
+      if (val >= min) return 'yellow';
+      return 'red';
+    }
+    if (key === 'physicalActivity') {
+      const target = getLookup3Metric('Activity Target', grade);
+      const min = getLookup3Metric('Activity Min', grade);
+      if (val >= target) return 'green';
+      if (val >= min) return 'yellow';
+      return 'red';
+    }
     if (key === 'sugaryDrinks') {
-      return val === 0 ? 'green' : val === 1 ? 'yellow' : 'red';
+      const target = getLookup3Metric('Sugar Target', grade);
+      if (val <= target) return 'green';
+      return 'red';
     }
     return val >= 8 ? 'green' : val === 7 ? 'yellow' : 'red';
   };
@@ -1173,7 +1266,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Learning Center - Fully Restored Without 1-3 Numbering */}
+        {/* Learning Center */}
         {currentPage === 'learning' && (
           <div style={{ textAlign: 'left', maxWidth: '800px' }}>
             <h2 style={{ color: steelBlue, fontFamily: manropeFont, fontSize: '24px', fontWeight: 'bold', marginBottom: '15px' }}>
@@ -1200,7 +1293,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Community Resources - Fully Restored */}
+        {/* Community Resources */}
         {currentPage === 'resources' && (
           <div style={{ textAlign: 'left', maxWidth: '700px' }}>
             <h2 style={{ color: steelBlue, fontSize: '24px', marginBottom: '15px' }}>Community Resources</h2>
@@ -1222,7 +1315,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Survey - Full Checkbox & Radio Options Restored */}
+        {/* Survey */}
         {currentPage === 'survey' && (
           <div style={{ textAlign: 'left', maxWidth: '700px' }}>
             <h2 style={{ color: steelBlue, fontSize: '24px', marginBottom: '15px' }}>Student Healthy Habits Survey</h2>
@@ -1339,7 +1432,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Survey Results (Teacher View) - Corrected Dynamic Calculations */}
+        {/* Survey Results (Teacher View) */}
         {currentPage === 'survey-results' && currentUserRole === 'Teacher' && (
           <div style={{ textAlign: 'left', maxWidth: '700px' }}>
             <h2 style={{ color: steelBlue, fontSize: '24px', marginBottom: '15px' }}>Classroom Survey Results</h2>
