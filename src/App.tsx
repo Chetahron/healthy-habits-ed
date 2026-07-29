@@ -120,7 +120,6 @@ export default function App() {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
       if (user) {
-        // Fetch user metadata profile from Firestore
         const userDocRef = doc(db, 'users', user.uid);
         const userDoc = await getDoc(userDocRef);
         if (userDoc.exists()) {
@@ -147,7 +146,6 @@ export default function App() {
   useEffect(() => {
     if (!currentUser) return;
 
-    // Sync daily logs specific to this individual account
     const logsRef = collection(db, 'users', currentUser.uid, 'dailyLogs');
     const unsubscribeLogs = onSnapshot(logsRef, (snapshot) => {
       const fetchedLogs: Record<string, DailyLog> = {};
@@ -158,7 +156,6 @@ export default function App() {
       setLogHistory(fetchedLogs);
     });
 
-    // Sync classroom survey responses
     const surveysRef = collection(db, 'surveys');
     const unsubscribeSurveys = onSnapshot(surveysRef, (snapshot) => {
       const fetchedSurveys: SurveyResponse[] = [];
@@ -182,7 +179,6 @@ export default function App() {
     setAuthError('');
     try {
       if (isSignUp) {
-        // Create Firebase Authentication Account
         const res = await createUserWithEmailAndPassword(auth, authEmail, authPassword);
         const profile: UserProfile = {
           uid: res.user.uid,
@@ -192,11 +188,9 @@ export default function App() {
           classroomCode: classCodeInput,
           userGrade: gradeInput,
         };
-        // Store User Profile in Firestore
         await setDoc(doc(db, 'users', res.user.uid), profile);
         setUserProfile(profile);
       } else {
-        // Log in to Existing Account
         await signInWithEmailAndPassword(auth, authEmail, authPassword);
       }
     } catch (err: any) {
@@ -273,68 +267,82 @@ export default function App() {
   }
 
   // ==========================================
-  // **LOGIN / SIGN-UP VIEW (UNAUTHENTICATED)**
+  // **LOGIN / SIGN-UP VIEW WITH PHOTO HERO**
   // ==========================================
   if (!currentUser || !userProfile) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FCFAF5', fontFamily: 'sans-serif' }}>
-        <form onSubmit={handleAuthSubmit} style={{ backgroundColor: '#FFF', padding: '30px', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', width: '360px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-          <h2 style={{ textAlign: 'center', color: '#3E6F9B', margin: 0 }}>HEALTHY HABITS ED</h2>
-          <h4 style={{ textAlign: 'center', color: '#666', margin: '0 0 10px 0' }}>{isSignUp ? 'Create an Account' : 'Sign In to Your Account'}</h4>
-
-          {authError && <div style={{ color: 'red', fontSize: '12px', textAlign: 'center' }}>{authError}</div>}
-
-          {isSignUp && (
-            <>
-              <label style={{ display: 'flex', flexDirection: 'column', fontSize: '14px' }}>
-                Full Name:
-                <input type="text" required value={displayNameInput} onChange={(e) => setDisplayNameInput(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #CCC', marginTop: '4px' }} />
-              </label>
-              <label style={{ display: 'flex', flexDirection: 'column', fontSize: '14px' }}>
-                Role:
-                <select value={roleInput} onChange={(e) => setRoleInput(e.target.value as UserStatus)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #CCC', marginTop: '4px' }}>
-                  <option value="Student">Student</option>
-                  <option value="Teacher">Teacher</option>
-                </select>
-              </label>
-              <label style={{ display: 'flex', flexDirection: 'column', fontSize: '14px' }}>
-                Classroom Code:
-                <input type="text" required value={classCodeInput} onChange={(e) => setClassCodeInput(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #CCC', marginTop: '4px' }} />
-              </label>
-              <label style={{ display: 'flex', flexDirection: 'column', fontSize: '14px' }}>
-                Grade Level:
-                <input type="text" required value={gradeInput} onChange={(e) => setGradeInput(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #CCC', marginTop: '4px' }} />
-              </label>
-            </>
-          )}
-
-          <label style={{ display: 'flex', flexDirection: 'column', fontSize: '14px' }}>
-            Email Address:
-            <input type="email" required value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #CCC', marginTop: '4px' }} />
-          </label>
-
-          <label style={{ display: 'flex', flexDirection: 'column', fontSize: '14px' }}>
-            Password:
-            <input type="password" required value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #CCC', marginTop: '4px' }} />
-          </label>
-
-          <button type="submit" style={{ backgroundColor: '#3E6F9B', color: '#FFF', padding: '10px', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', marginTop: '10px' }}>
-            {isSignUp ? 'Sign Up' : 'Log In'}
-          </button>
-
-          <div style={{ textAlign: 'center', fontSize: '13px', marginTop: '10px' }}>
-            {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
-            <span onClick={() => setIsSignUp(!isSignUp)} style={{ color: '#3E6F9B', cursor: 'pointer', textDecoration: 'underline', fontWeight: 'bold' }}>
-              {isSignUp ? 'Log In' : 'Sign Up'}
-            </span>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FCFAF5', fontFamily: 'sans-serif', padding: '20px' }}>
+        <div style={{ backgroundColor: '#FFF', borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', width: '420px', overflow: 'hidden' }}>
+          
+          {/* Photo 1: Auth Banner Photo */}
+          <div style={{ height: '160px', overflow: 'hidden', position: 'relative' }}>
+            <img 
+              src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=800&q=80" 
+              alt="Healthy Lifestyle Header" 
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.6), transparent)', display: 'flex', alignItems: 'flex-end', padding: '15px' }}>
+              <h2 style={{ color: '#FFF', margin: 0, fontSize: '22px', fontWeight: 'bold' }}>HEALTHY HABITS ED</h2>
+            </div>
           </div>
-        </form>
+
+          <form onSubmit={handleAuthSubmit} style={{ padding: '25px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <h4 style={{ textAlign: 'center', color: '#555', margin: '0 0 5px 0' }}>{isSignUp ? 'Create Your Account' : 'Sign In to Your Account'}</h4>
+
+            {authError && <div style={{ color: '#D9534F', fontSize: '12px', textAlign: 'center', fontWeight: 'bold' }}>{authError}</div>}
+
+            {isSignUp && (
+              <>
+                <label style={{ display: 'flex', flexDirection: 'column', fontSize: '13px', fontWeight: 'bold' }}>
+                  Full Name:
+                  <input type="text" required value={displayNameInput} onChange={(e) => setDisplayNameInput(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #CCC', marginTop: '4px', fontWeight: 'normal' }} />
+                </label>
+                <label style={{ display: 'flex', flexDirection: 'column', fontSize: '13px', fontWeight: 'bold' }}>
+                  Role:
+                  <select value={roleInput} onChange={(e) => setRoleInput(e.target.value as UserStatus)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #CCC', marginTop: '4px', fontWeight: 'normal' }}>
+                    <option value="Student">Student</option>
+                    <option value="Teacher">Teacher</option>
+                  </select>
+                </label>
+                <label style={{ display: 'flex', flexDirection: 'column', fontSize: '13px', fontWeight: 'bold' }}>
+                  Classroom Code:
+                  <input type="text" required value={classCodeInput} onChange={(e) => setClassCodeInput(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #CCC', marginTop: '4px', fontWeight: 'normal' }} />
+                </label>
+                <label style={{ display: 'flex', flexDirection: 'column', fontSize: '13px', fontWeight: 'bold' }}>
+                  Grade Level:
+                  <input type="text" required value={gradeInput} onChange={(e) => setGradeInput(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #CCC', marginTop: '4px', fontWeight: 'normal' }} />
+                </label>
+              </>
+            )}
+
+            <label style={{ display: 'flex', flexDirection: 'column', fontSize: '13px', fontWeight: 'bold' }}>
+              Email Address:
+              <input type="email" required value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #CCC', marginTop: '4px', fontWeight: 'normal' }} />
+            </label>
+
+            <label style={{ display: 'flex', flexDirection: 'column', fontSize: '13px', fontWeight: 'bold' }}>
+              Password:
+              <input type="password" required value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #CCC', marginTop: '4px', fontWeight: 'normal' }} />
+            </label>
+
+            <button type="submit" style={{ backgroundColor: '#3E6F9B', color: '#FFF', padding: '12px', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', marginTop: '8px', fontSize: '15px' }}>
+              {isSignUp ? 'Sign Up' : 'Log In'}
+            </button>
+
+            <div style={{ textAlign: 'center', fontSize: '13px', marginTop: '10px' }}>
+              {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
+              <span onClick={() => setIsSignUp(!isSignUp)} style={{ color: '#3E6F9B', cursor: 'pointer', textDecoration: 'underline', fontWeight: 'bold' }}>
+                {isSignUp ? 'Log In' : 'Sign Up'}
+              </span>
+            </div>
+          </form>
+        </div>
       </div>
     );
   }
 
   // ==========================================
-  // **AUTHENTICATED MAIN DASHBOARD VIEW**
+  // **AUTHENTICATED DASHBOARD WITH PHOTO HERO**
   // ==========================================
   const navButtons = [
     { label: 'My Classroom Scorecard', icon: '🏫' },
@@ -393,12 +401,19 @@ export default function App() {
       {/* Main Content Area */}
       <main style={{ flex: 1, padding: '30px', color: '#202124', overflowY: 'auto' }}>
         
-        {/* Info Banner */}
-        <div style={{ fontSize: '13px', marginBottom: '25px', lineHeight: '1.6', backgroundColor: '#FFF', padding: '12px 18px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-          <div><strong>User:</strong> {userProfile.displayName} ({userProfile.userStatus})</div>
-          <div><strong>Classroom Code:</strong> {userProfile.classroomCode}</div>
-          <div><strong>Grade Level:</strong> {userProfile.userGrade}</div>
-          <div><strong>Today's Date:</strong> {todayDate}</div>
+        {/* Photo 2: Top Hero Photo Banner */}
+        <div style={{ position: 'relative', height: '140px', borderRadius: '10px', overflow: 'hidden', marginBottom: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
+          <img 
+            src="https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=1200&q=80" 
+            alt="Healthy Living Banner" 
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(62,111,155,0.85), rgba(0,0,0,0.3))', display: 'flex', alignItems: 'center', padding: '25px', color: '#FFF' }}>
+            <div>
+              <h2 style={{ margin: 0, fontSize: '24px' }}>Welcome back, {userProfile.displayName}!</h2>
+              <p style={{ margin: '5px 0 0 0', opacity: 0.9, fontSize: '14px' }}>Classroom: {userProfile.classroomCode} | Role: {userProfile.userStatus} | Date: {todayDate}</p>
+            </div>
+          </div>
         </div>
 
         {/* Page 1: My Classroom Scorecard */}
