@@ -231,7 +231,7 @@ export default function App() {
 
   // User & Classroom Lookup Helpers
   const getCurrentUserGrade = (): string => {
-    if (!currentUser || !usersDb[currentUser]) return 'N/A';
+    if (!currentUser || !usersDb[currentUser]) return 'K - 5th';
     const user = usersDb[currentUser];
     if (user.role === 'Teacher' && user.grade) {
       return user.grade;
@@ -240,7 +240,7 @@ export default function App() {
     const teacher = Object.values(usersDb).find(
       (u) => u.role === 'Teacher' && (u.classroomCode || '').trim().toLowerCase() === userCode
     );
-    return teacher?.grade || user.grade || 'N/A';
+    return teacher?.grade || user.grade || 'K - 5th';
   };
 
   const getCurrentUserRole = (): 'Teacher' | 'Student' | 'N/A' => {
@@ -254,7 +254,7 @@ export default function App() {
   };
 
   // --- Dynamic Lookup Table Hook Functions ---
-  const getGoalFromLookup1 = (habitKey: HabitKey): string => {
+  const getGoalFromLookup1 = (habitKey: HabitKey, gradeOverride?: string): string => {
     const headers = Lookup1[0];
     const habitLabelMap: Record<HabitKey, string> = {
       sleep: 'Sleep',
@@ -271,13 +271,13 @@ export default function App() {
     const colIdx = headers.findIndex(h => h.toLowerCase() === (targetHeader || '').toLowerCase());
     if (colIdx === -1) return 'N/A';
 
-    const grade = getCurrentUserGrade();
+    const grade = gradeOverride || getCurrentUserGrade();
     const role = getCurrentUserRole();
 
     let rowIdx = 1; // Default K-5th
     if (grade === '6th - 8th') rowIdx = 2;
     if (grade === '9th - 12th') rowIdx = 3;
-    if (role === 'Teacher') rowIdx = 4;
+    if (role === 'Teacher' && !gradeOverride) rowIdx = 4;
 
     return Lookup1[rowIdx]?.[colIdx] || 'N/A';
   };
@@ -305,18 +305,18 @@ export default function App() {
     return parseFloat(valStr.replace('%', '')) || 0;
   };
 
-  // Habit Configs Dynamically Generated from Lookup Tables
+  // Habit Configs Dynamically Generated from Lookup Tables for any Grade
   const getHabitsConfig = (grade: string): HabitConfig[] => {
     const isElementary = grade === 'K - 5th';
     return [
-      { key: 'sleep', label: 'Sleep', icon: '😴', selections: isElementary ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], selectionLabels: isElementary ? { 12: '12+' } : { 10: '10+' }, goal: getGoalFromLookup1('sleep') },
-      { key: 'physicalActivity', label: 'Physical Activity', icon: '🏃', selections: [0, 15, 30, 45, 60], selectionLabels: { 60: '60+' }, goal: getGoalFromLookup1('physicalActivity') },
-      { key: 'water', label: 'Water', icon: '💧', selections: isElementary ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], selectionLabels: isElementary ? { 9: '9+' } : { 11: '11+' }, goal: getGoalFromLookup1('water') },
-      { key: 'fruitsVeg', label: 'Fruits & Vegetables', icon: '🍎', selections: [0, 1, 2, 3, 4, 5], selectionLabels: { 5: '5+' }, goal: getGoalFromLookup1('fruitsVeg') },
-      { key: 'wholeFoods', label: 'Whole Foods', icon: '🥗', selections: [0, 10, 20, 30, 40, 50, 60, 70, 80], selectionLabels: { 80: '80+' }, goal: getGoalFromLookup1('wholeFoods') },
-      { key: 'upf', label: 'Ultra-Processed Foods', icon: '🍔', selections: [0, 10, 20, 30, 40], selectionLabels: { 40: '40+' }, goal: getGoalFromLookup1('upf') },
-      { key: 'sugaryDrinks', label: 'Sugary Drinks', icon: '🧃', selections: [0, 1, 2], selectionLabels: { 2: '2+' }, goal: getGoalFromLookup1('sugaryDrinks') },
-      { key: 'mood', label: 'Mood', icon: '⭐', selections: [1, 2, 3], goal: getGoalFromLookup1('mood') },
+      { key: 'sleep', label: 'Sleep', icon: '😴', selections: isElementary ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], selectionLabels: isElementary ? { 12: '12+' } : { 10: '10+' }, goal: getGoalFromLookup1('sleep', grade) },
+      { key: 'physicalActivity', label: 'Physical Activity', icon: '🏃', selections: [0, 15, 30, 45, 60], selectionLabels: { 60: '60+' }, goal: getGoalFromLookup1('physicalActivity', grade) },
+      { key: 'water', label: 'Water', icon: '💧', selections: isElementary ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], selectionLabels: isElementary ? { 9: '9+' } : { 11: '11+' }, goal: getGoalFromLookup1('water', grade) },
+      { key: 'fruitsVeg', label: 'Fruits & Vegetables', icon: '🍎', selections: [0, 1, 2, 3, 4, 5], selectionLabels: { 5: '5+' }, goal: getGoalFromLookup1('fruitsVeg', grade) },
+      { key: 'wholeFoods', label: 'Whole Foods', icon: '🥗', selections: [0, 10, 20, 30, 40, 50, 60, 70, 80], selectionLabels: { 80: '80+' }, goal: getGoalFromLookup1('wholeFoods', grade) },
+      { key: 'upf', label: 'Ultra-Processed Foods', icon: '🍔', selections: [0, 10, 20, 30, 40], selectionLabels: { 40: '40+' }, goal: getGoalFromLookup1('upf', grade) },
+      { key: 'sugaryDrinks', label: 'Sugary Drinks', icon: '🧃', selections: [0, 1, 2], selectionLabels: { 2: '2+' }, goal: getGoalFromLookup1('sugaryDrinks', grade) },
+      { key: 'mood', label: 'Mood', icon: '⭐', selections: [1, 2, 3], goal: getGoalFromLookup1('mood', grade) },
     ];
   };
 
@@ -772,14 +772,15 @@ export default function App() {
       fontFamily: manropeFont
     },
     smallContentHeader: {
-      fontSize: '15px',
+      fontSize: '16px',
       fontWeight: 'bold',
-      margin: '6px 0 3px 0'
+      margin: '12px 0 4px 0',
+      color: steelBlue
     },
     smallContentText: {
       fontSize: '14px',
-      margin: '0 0 8px 0',
-      lineHeight: '1.5'
+      margin: '0 0 10px 0',
+      lineHeight: '1.6'
     },
     halfHeightSpace: {
       height: '10px'
@@ -1272,23 +1273,45 @@ export default function App() {
             <h2 style={{ color: steelBlue, fontFamily: manropeFont, fontSize: '24px', fontWeight: 'bold', marginBottom: '15px' }}>
               Learning Center
             </h2>
-            <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '15px', marginBottom: '6px' }}>Sleep</h3>
             <p style={styles.smallContentText}>
-              Sleep is essential for physical and mental restoration. Getting 8-10 hours of quality sleep every night improves concentration, mood regulation, and immune function.
+              Welcome to the Learning Center! Explore evidence-based guides below to understand how each habit impacts your cognitive performance, physical health, and everyday well-being.
             </p>
-            <h4 style={styles.smallContentHeader}>Cognitive Recovery</h4>
-            <p style={styles.smallContentText}>During deep sleep, your brain consolidates memories, processes information learned throughout the day, and clears out metabolic waste.</p>
+
+            <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '20px', marginBottom: '6px' }}>😴 Sleep & Rest</h3>
+            <p style={styles.smallContentText}>
+              Sleep is essential for physical and mental restoration. For your grade level ({currentGrade}), the recommended goal is <strong>{getGoalFromLookup1('sleep')}</strong>. Getting consistent quality sleep improves concentration, emotional stability, and immune defense.
+            </p>
+            <h4 style={styles.smallContentHeader}>Cognitive Recovery & Brain Glymphatic System</h4>
+            <p style={styles.smallContentText}>
+              During deep sleep cycles, your brain activates the glymphatic clearance pathway to flush out metabolic waste products built up throughout the day, consolidating long-term memory and sharpening learning agility.
+            </p>
             <div style={styles.halfHeightSpace} />
 
-            <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '15px', marginBottom: '6px' }}>Physical Activity</h3>
+            <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '20px', marginBottom: '6px' }}>🏃 Physical Activity</h3>
             <p style={styles.smallContentText}>
-              Regular movement strengthens cardiovascular health, builds muscular endurance, and releases endorphins that elevate mood and energy levels.
+              Regular movement strengthens cardiovascular capacity, builds lean muscle tone, and triggers endorphin release to elevate your daily mood. Your grade target is <strong>{getGoalFromLookup1('physicalActivity')}</strong>.
+            </p>
+            <h4 style={styles.smallContentHeader}>Cardiorespiratory & Neurotransmitter Health</h4>
+            <p style={styles.smallContentText}>
+              Exercise increases blood flow and oxygen delivery to cerebral tissues, stimulating the release of BDNF (Brain-Derived Neurotrophic Factor), which supports neuroplasticity and stress resilience.
             </p>
             <div style={styles.halfHeightSpace} />
 
-            <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '15px', marginBottom: '6px' }}>Water & Hydration</h3>
+            <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '20px', marginBottom: '6px' }}>💧 Water & Hydration</h3>
             <p style={styles.smallContentText}>
-              Water regulates body temperature, lubricates joints, and facilitates nutrient transport across all cellular structures.
+              Water regulates core body temperature, cushions cellular joints, and enables electrochemical signal transmission across neural pathways. Your classroom target is <strong>{getGoalFromLookup1('water')}</strong>.
+            </p>
+            <div style={styles.halfHeightSpace} />
+
+            <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '20px', marginBottom: '6px' }}>🍎 Nutrition: Fruits & Vegetables, Whole Foods, & UPFs</h3>
+            <p style={styles.smallContentText}>
+              Whole foods and produce supply vital micronutrients and dietary fiber. Your targets: Fruits & Veg ({getGoalFromLookup1('fruitsVeg')}), Whole Foods ({getGoalFromLookup1('wholeFoods')}), and Ultra-Processed Foods ({getGoalFromLookup1('upf')}). Minimizing ultra-processed foods stabilizes blood sugar and sustains clean energy.
+            </p>
+            <div style={styles.halfHeightSpace} />
+
+            <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '20px', marginBottom: '6px' }}>⭐ Mindfulness & Mood</h3>
+            <p style={styles.smallContentText}>
+              Practicing mindfulness for <strong>{getGoalFromLookup1('mood')}</strong> helps regulate the autonomic nervous system, lowering cortisol levels and enhancing emotional clarity throughout busy school days.
             </p>
           </div>
         )}
@@ -1297,21 +1320,45 @@ export default function App() {
         {currentPage === 'resources' && (
           <div style={{ textAlign: 'left', maxWidth: '700px' }}>
             <h2 style={{ color: steelBlue, fontSize: '24px', marginBottom: '15px' }}>Community Resources</h2>
-            <p style={styles.smallContentText}>Explore verified local and regional wellness programs, nutrition initiatives, and active living networks:</p>
+            <p style={styles.smallContentText}>Explore verified local, regional, and national wellness programs, nutritional supports, and active living networks designed to help you and your family thrive:</p>
+            
             <div style={{ background: '#FFF', padding: '15px', borderRadius: '8px', borderLeft: `4px solid ${steelBlue}`, marginBottom: '15px', marginTop: '15px' }}>
-              <h4 style={{ margin: '0 0 5px 0' }}>🍎 Free Student Meals Program</h4>
-              <p style={{ margin: 0, fontSize: '14px', color: '#555' }}>Provides healthy breakfast and lunch options to students throughout the school year and designated community summer programs.</p>
+              <h4 style={{ margin: '0 0 5px 0', color: steelBlue }}>🍎 Free Student Meals & Nutrition Programs</h4>
+              <p style={{ margin: 0, fontSize: '14px', color: '#555' }}>Provides healthy breakfast, lunch, and snack options to students throughout the school year and designated community summer programs.</p>
             </div>
+
             <div style={{ background: '#FFF', padding: '15px', borderRadius: '8px', borderLeft: `4px solid ${steelBlue}`, marginBottom: '15px' }}>
-              <h4 style={{ margin: '0 0 5px 0' }}>🏞️ Local Parks & Recreation Trails</h4>
-              <p style={{ margin: 0, fontSize: '14px', color: '#555' }}>Access free public walking tracks, athletic fields, and nature preserves in your local area.</p>
+              <h4 style={{ margin: '0 0 5px 0', color: steelBlue }}>🥦 Local Community Food Pantries</h4>
+              <p style={{ margin: 0, fontSize: '14px', color: '#555' }}>Accessible fresh produce distributions and staple pantry boxes for families seeking consistent access to wholesome food choices.</p>
             </div>
-            <a href="https://www.cdc.gov/healthyschools/index.htm" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>
-              CDC Healthy Schools Guidelines
-            </a>
-            <a href="https://www.nutrition.gov" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>
-              Nutrition.gov Dietary Resources
-            </a>
+
+            <div style={{ background: '#FFF', padding: '15px', borderRadius: '8px', borderLeft: `4px solid ${steelBlue}`, marginBottom: '15px' }}>
+              <h4 style={{ margin: '0 0 5px 0', color: steelBlue }}>🏞️ Public Parks, Recreation Centers & Walking Trails</h4>
+              <p style={{ margin: 0, fontSize: '14px', color: '#555' }}>Free public access to neighborhood walking loops, athletic fields, tennis courts, and supervised community youth centers.</p>
+            </div>
+
+            <div style={{ background: '#FFF', padding: '15px', borderRadius: '8px', borderLeft: `4px solid ${steelBlue}`, marginBottom: '15px' }}>
+              <h4 style={{ margin: '0 0 5px 0', color: steelBlue }}>🧠 Youth Mental Health & Mindfulness Hotlines</h4>
+              <p style={{ margin: 0, fontSize: '14px', color: '#555' }}>Confidential peer support networks, school counseling directories, and mindfulness guidance resources for stress management.</p>
+            </div>
+
+            <div style={{ background: '#FFF', padding: '15px', borderRadius: '8px', borderLeft: `4px solid ${steelBlue}`, marginBottom: '15px' }}>
+              <h4 style={{ margin: '0 0 5px 0', color: steelBlue }}>📚 After-School Tutoring & Academic Support</h4>
+              <p style={{ margin: 0, fontSize: '14px', color: '#555' }}>Free community homework help clubs and reading mentoring programs to reduce academic burden and promote balanced schedules.</p>
+            </div>
+
+            <div style={{ marginTop: '20px' }}>
+              <h4 style={{ color: steelBlue, fontSize: '16px', marginBottom: '8px' }}>Official National Health Portals:</h4>
+              <a href="https://www.cdc.gov/healthyschools/index.htm" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>
+                CDC Healthy Schools Guidelines
+              </a>
+              <a href="https://www.nutrition.gov" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>
+                Nutrition.gov Dietary Resources
+              </a>
+              <a href="https://www.mentalhealth.gov" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>
+                MentalHealth.gov Youth Resources
+              </a>
+            </div>
           </div>
         )}
 
