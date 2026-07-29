@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import logo from './logo.png';
+import sidebarLogo from './sidebar-logo.png';
+
 import { db, auth } from './firebase';
 import { collection, doc, setDoc, getDoc, onSnapshot } from 'firebase/firestore';
 import { 
@@ -71,7 +74,7 @@ export default function App() {
   const [gradeInput, setGradeInput] = useState<string>('9th - 12th');
   const [authError, setAuthError] = useState<string>('');
 
-  // App Navigation & UI State
+  // Navigation State
   const [activePage, setActivePage] = useState<string>('My Classroom Scorecard');
   const [todayDate] = useState<string>('07/28/2026');
   const [selectedHistoryDate, setSelectedHistoryDate] = useState<string>('07/28/2026');
@@ -89,7 +92,7 @@ export default function App() {
 
   const [logHistory, setLogHistory] = useState<Record<string, DailyLog>>({});
 
-  // Student Survey Form State
+  // Survey Form State
   const [studentSurvey, setStudentSurvey] = useState<SurveyResponse>({
     studentUsername: '',
     classroomCode: '',
@@ -102,7 +105,7 @@ export default function App() {
 
   const [surveyData, setSurveyData] = useState<SurveyResponse[]>([]);
 
-  // Mock Student Scores for Dashboard
+  // Mock Data arrays
   const [classroomStudents] = useState<StudentScore[]>([
     { id: '1', name: 'Alex M.', score: 94, waterAvg: 8.2, activityAvg: 50, sleepAvg: 8.1, streakDays: 14 },
     { id: '2', name: 'Jordan T.', score: 88, waterAvg: 7.5, activityAvg: 40, sleepAvg: 7.8, streakDays: 10 },
@@ -114,7 +117,7 @@ export default function App() {
   const ultraProcessedOptions = ['0', '10', '20', '30', '40+'];
 
   // ==========================================
-  // **FIREBASE AUTHENTICATION LISTENER**
+  // **FIREBASE AUTH LISTENER**
   // ==========================================
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -141,7 +144,7 @@ export default function App() {
   }, []);
 
   // ==========================================
-  // **FIRESTORE REAL-TIME DATA SYNCING**
+  // **LIVE FIRESTORE DATA SYNC**
   // ==========================================
   useEffect(() => {
     if (!currentUser) return;
@@ -172,7 +175,7 @@ export default function App() {
   }, [currentUser]);
 
   // ==========================================
-  // **AUTH HANDLERS**
+  // **HANDLERS**
   // ==========================================
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -202,16 +205,13 @@ export default function App() {
     signOut(auth);
   };
 
-  // ==========================================
-  // **LOG & SURVEY HANDLERS**
-  // ==========================================
   const handleSaveDailyLog = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) return;
     try {
       const docId = dailyLog.date.replace(/\//g, '-');
       await setDoc(doc(db, 'users', currentUser.uid, 'dailyLogs', docId), dailyLog);
-      alert('Daily Log Saved to your Account!');
+      alert('Daily Log Saved!');
     } catch (error) {
       console.error('Error saving log:', error);
       alert('Failed to save log.');
@@ -255,9 +255,6 @@ export default function App() {
     }).length;
   };
 
-  // ==========================================
-  // **LOADING SCREEN**
-  // ==========================================
   if (authLoading) {
     return (
       <div style={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', fontFamily: 'sans-serif' }}>
@@ -267,65 +264,99 @@ export default function App() {
   }
 
   // ==========================================
-  // **LOGIN / SIGN-UP VIEW WITH PHOTO HERO**
+  // **AUTH VIEW (WITH LOGO.PNG)**
   // ==========================================
   if (!currentUser || !userProfile) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FCFAF5', fontFamily: 'sans-serif', padding: '20px' }}>
-        <div style={{ backgroundColor: '#FFF', borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', width: '420px', overflow: 'hidden' }}>
+        <div style={{ backgroundColor: '#FFF', borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', width: '400px', padding: '30px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           
-          {/* Photo 1: Auth Banner Photo */}
-          <div style={{ height: '160px', overflow: 'hidden', position: 'relative' }}>
-            <img 
-              src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=800&q=80" 
-              alt="Healthy Lifestyle Header" 
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            />
-            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.6), transparent)', display: 'flex', alignItems: 'flex-end', padding: '15px' }}>
-              <h2 style={{ color: '#FFF', margin: 0, fontSize: '22px', fontWeight: 'bold' }}>HEALTHY HABITS ED</h2>
-            </div>
-          </div>
+          <img 
+            src={logo} 
+            alt="Healthy Habits Logo" 
+            style={{ maxHeight: '90px', objectFit: 'contain', marginBottom: '15px' }} 
+          />
 
-          <form onSubmit={handleAuthSubmit} style={{ padding: '25px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <h4 style={{ textAlign: 'center', color: '#555', margin: '0 0 5px 0' }}>{isSignUp ? 'Create Your Account' : 'Sign In to Your Account'}</h4>
+          <h2 style={{ color: '#3E6F9B', margin: '0 0 5px 0', textAlign: 'center' }}>HEALTHY HABITS ED</h2>
+          <h4 style={{ color: '#666', margin: '0 0 20px 0', textAlign: 'center', fontWeight: 'normal' }}>
+            {isSignUp ? 'Create Your Account' : 'Sign In to Your Account'}
+          </h4>
 
+          <form onSubmit={handleAuthSubmit} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '14px' }}>
             {authError && <div style={{ color: '#D9534F', fontSize: '12px', textAlign: 'center', fontWeight: 'bold' }}>{authError}</div>}
 
             {isSignUp && (
               <>
                 <label style={{ display: 'flex', flexDirection: 'column', fontSize: '13px', fontWeight: 'bold' }}>
                   Full Name:
-                  <input type="text" required value={displayNameInput} onChange={(e) => setDisplayNameInput(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #CCC', marginTop: '4px', fontWeight: 'normal' }} />
+                  <input 
+                    type="text" 
+                    required 
+                    value={displayNameInput} 
+                    onChange={(e) => setDisplayNameInput(e.target.value)} 
+                    style={{ padding: '8px', borderRadius: '4px', border: '1px solid #CCC', marginTop: '4px', fontWeight: 'normal' }} 
+                  />
                 </label>
                 <label style={{ display: 'flex', flexDirection: 'column', fontSize: '13px', fontWeight: 'bold' }}>
                   Role:
-                  <select value={roleInput} onChange={(e) => setRoleInput(e.target.value as UserStatus)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #CCC', marginTop: '4px', fontWeight: 'normal' }}>
+                  <select 
+                    value={roleInput} 
+                    onChange={(e) => setRoleInput(e.target.value as UserStatus)} 
+                    style={{ padding: '8px', borderRadius: '4px', border: '1px solid #CCC', marginTop: '4px', fontWeight: 'normal' }}
+                  >
                     <option value="Student">Student</option>
                     <option value="Teacher">Teacher</option>
                   </select>
                 </label>
                 <label style={{ display: 'flex', flexDirection: 'column', fontSize: '13px', fontWeight: 'bold' }}>
                   Classroom Code:
-                  <input type="text" required value={classCodeInput} onChange={(e) => setClassCodeInput(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #CCC', marginTop: '4px', fontWeight: 'normal' }} />
+                  <input 
+                    type="text" 
+                    required 
+                    value={classCodeInput} 
+                    onChange={(e) => setClassCodeInput(e.target.value)} 
+                    style={{ padding: '8px', borderRadius: '4px', border: '1px solid #CCC', marginTop: '4px', fontWeight: 'normal' }} 
+                  />
                 </label>
                 <label style={{ display: 'flex', flexDirection: 'column', fontSize: '13px', fontWeight: 'bold' }}>
                   Grade Level:
-                  <input type="text" required value={gradeInput} onChange={(e) => setGradeInput(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #CCC', marginTop: '4px', fontWeight: 'normal' }} />
+                  <input 
+                    type="text" 
+                    required 
+                    value={gradeInput} 
+                    onChange={(e) => setGradeInput(e.target.value)} 
+                    style={{ padding: '8px', borderRadius: '4px', border: '1px solid #CCC', marginTop: '4px', fontWeight: 'normal' }} 
+                  />
                 </label>
               </>
             )}
 
             <label style={{ display: 'flex', flexDirection: 'column', fontSize: '13px', fontWeight: 'bold' }}>
               Email Address:
-              <input type="email" required value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #CCC', marginTop: '4px', fontWeight: 'normal' }} />
+              <input 
+                type="email" 
+                required 
+                value={authEmail} 
+                onChange={(e) => setAuthEmail(e.target.value)} 
+                style={{ padding: '8px', borderRadius: '4px', border: '1px solid #CCC', marginTop: '4px', fontWeight: 'normal' }} 
+              />
             </label>
 
             <label style={{ display: 'flex', flexDirection: 'column', fontSize: '13px', fontWeight: 'bold' }}>
               Password:
-              <input type="password" required value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid #CCC', marginTop: '4px', fontWeight: 'normal' }} />
+              <input 
+                type="password" 
+                required 
+                value={authPassword} 
+                onChange={(e) => setAuthPassword(e.target.value)} 
+                style={{ padding: '8px', borderRadius: '4px', border: '1px solid #CCC', marginTop: '4px', fontWeight: 'normal' }} 
+              />
             </label>
 
-            <button type="submit" style={{ backgroundColor: '#3E6F9B', color: '#FFF', padding: '12px', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', marginTop: '8px', fontSize: '15px' }}>
+            <button 
+              type="submit" 
+              style={{ backgroundColor: '#3E6F9B', color: '#FFF', padding: '12px', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', marginTop: '8px', fontSize: '15px' }}
+            >
               {isSignUp ? 'Sign Up' : 'Log In'}
             </button>
 
@@ -342,7 +373,7 @@ export default function App() {
   }
 
   // ==========================================
-  // **AUTHENTICATED DASHBOARD WITH PHOTO HERO**
+  // **MAIN APP VIEW (WITH SIDEBAR-LOGO.PNG)**
   // ==========================================
   const navButtons = [
     { label: 'My Classroom Scorecard', icon: '🏫' },
@@ -360,8 +391,15 @@ export default function App() {
       
       {/* Sidebar Navigation */}
       <aside style={{ width: '260px', backgroundColor: '#3E6F9B', padding: '20px', color: '#FFF', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-          <div style={{ fontSize: '18px', fontWeight: 'bold', letterSpacing: '1px' }}>HEALTHY HABITS ED</div>
+        
+        {/* Sidebar Logo Header */}
+        <div style={{ textAlign: 'center', marginBottom: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+          <img 
+            src={sidebarLogo} 
+            alt="Sidebar Logo" 
+            style={{ maxHeight: '60px', objectFit: 'contain' }} 
+          />
+          <div style={{ fontSize: '16px', fontWeight: 'bold', letterSpacing: '1px' }}>HEALTHY HABITS ED</div>
         </div>
 
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '10px', flex: 1 }}>
@@ -388,7 +426,7 @@ export default function App() {
           ))}
         </nav>
 
-        {/* User Footer / Log Out */}
+        {/* User Profile / Logout */}
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.2)', paddingTop: '15px', marginTop: '15px' }}>
           <div style={{ fontSize: '13px', fontWeight: 'bold' }}>{userProfile.displayName}</div>
           <div style={{ fontSize: '11px', opacity: 0.8, marginBottom: '10px' }}>{userProfile.email}</div>
@@ -401,19 +439,12 @@ export default function App() {
       {/* Main Content Area */}
       <main style={{ flex: 1, padding: '30px', color: '#202124', overflowY: 'auto' }}>
         
-        {/* Photo 2: Top Hero Photo Banner */}
-        <div style={{ position: 'relative', height: '140px', borderRadius: '10px', overflow: 'hidden', marginBottom: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
-          <img 
-            src="https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=1200&q=80" 
-            alt="Healthy Living Banner" 
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          />
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(62,111,155,0.85), rgba(0,0,0,0.3))', display: 'flex', alignItems: 'center', padding: '25px', color: '#FFF' }}>
-            <div>
-              <h2 style={{ margin: 0, fontSize: '24px' }}>Welcome back, {userProfile.displayName}!</h2>
-              <p style={{ margin: '5px 0 0 0', opacity: 0.9, fontSize: '14px' }}>Classroom: {userProfile.classroomCode} | Role: {userProfile.userStatus} | Date: {todayDate}</p>
-            </div>
-          </div>
+        {/* Info Header Banner */}
+        <div style={{ fontSize: '13px', marginBottom: '25px', lineHeight: '1.6', backgroundColor: '#FFF', padding: '12px 18px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+          <div><strong>User:</strong> {userProfile.displayName} ({userProfile.userStatus})</div>
+          <div><strong>Classroom Code:</strong> {userProfile.classroomCode}</div>
+          <div><strong>Grade Level:</strong> {userProfile.userGrade}</div>
+          <div><strong>Today's Date:</strong> {todayDate}</div>
         </div>
 
         {/* Page 1: My Classroom Scorecard */}
@@ -590,7 +621,7 @@ export default function App() {
               </div>
               <div style={{ backgroundColor: '#FFF', padding: '20px', borderRadius: '8px' }}>
                 <h3 style={{ color: '#3E6F9B' }}>🥗 Whole Foods</h3>
-                <p style={{ color: '#555' }}>Whole foods (fruits, vegetables, nuts) supply long-lasting energy without sugar crashes.</p>
+                <p style={{ color: '#555' }}>Whole foods supply long-lasting energy without sugar crashes.</p>
               </div>
               <div style={{ backgroundColor: '#FFF', padding: '20px', borderRadius: '8px' }}>
                 <h3 style={{ color: '#3E6F9B' }}>😴 Rest & Sleep</h3>
@@ -647,7 +678,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Page 8: Survey Results (Teacher Only) */}
+        {/* Page 8: Survey Results (Teacher View) */}
         {activePage === 'Survey Results' && userProfile.userStatus === 'Teacher' && (
           <div>
             <h1 style={{ color: '#3E6F9B', fontSize: '24px', marginBottom: '10px' }}>Survey Results for {userProfile.classroomCode}</h1>
