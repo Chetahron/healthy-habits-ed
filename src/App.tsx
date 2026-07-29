@@ -380,6 +380,16 @@ export default function App() {
     setTimeout(() => setLogSuccessMsg(''), 3000);
   };
 
+  const handleCheckboxChange = (field: keyof SurveyResponse, value: string) => {
+    setStudentSurvey((prev) => {
+      const currentArr = (prev[field] as string[]) || [];
+      const updatedArr = currentArr.includes(value)
+        ? currentArr.filter((item) => item !== value)
+        : [...currentArr, value];
+      return { ...prev, [field]: updatedArr };
+    });
+  };
+
   const handleSurveySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const finalSurvey = {
@@ -658,6 +668,15 @@ export default function App() {
       color: steelBlue,
       fontWeight: 'bold',
       fontSize: '16px'
+    },
+    resourceIndentLink: {
+      display: 'block',
+      marginLeft: '20px',
+      color: steelBlue,
+      textDecoration: 'underline',
+      marginBottom: '6px',
+      fontSize: '14px',
+      fontFamily: manropeFont
     },
     smallContentHeader: {
       fontSize: '15px',
@@ -977,7 +996,7 @@ export default function App() {
 
       {/* Main Content Area */}
       <div style={styles.mainContent}>
-        {/* Header section matching Edits 1-21 specifications */}
+        {/* Header section */}
         <div style={{ textAlign: 'left', marginBottom: '25px' }}>
           <img src={logo} alt="HealthyHabitsED Logo" style={styles.headerLogoImage} />
           <div style={{ color: charBlack, fontFamily: manropeFont, fontSize: '16px', lineHeight: '1.5' }}>
@@ -1154,7 +1173,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Learning Center (Formatted per Edits) */}
+        {/* Learning Center - Fully Restored Without 1-3 Numbering */}
         {currentPage === 'learning' && (
           <div style={{ textAlign: 'left', maxWidth: '800px' }}>
             <h2 style={{ color: steelBlue, fontFamily: manropeFont, fontSize: '24px', fontWeight: 'bold', marginBottom: '15px' }}>
@@ -1162,41 +1181,48 @@ export default function App() {
             </h2>
             <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '15px', marginBottom: '6px' }}>Sleep</h3>
             <p style={styles.smallContentText}>
-              Sleep is when your brain and body recharge so you can learn, grow, and feel your best. Getting the right amount of sleep every night helps you succeed in school, sports, and everyday life.
+              Sleep is essential for physical and mental restoration. Getting 8-10 hours of quality sleep every night improves concentration, mood regulation, and immune function.
             </p>
-            <h4 style={styles.smallContentHeader}>1. Your Brain Gets Stronger</h4>
-            <p style={styles.smallContentText}>While you sleep, your brain organizes what you learned during the day and stores it as memories. Good sleep helps you focus, solve problems, and remember what you study.</p>
+            <h4 style={styles.smallContentHeader}>Cognitive Recovery</h4>
+            <p style={styles.smallContentText}>During deep sleep, your brain consolidates memories, processes information learned throughout the day, and clears out metabolic waste.</p>
             <div style={styles.halfHeightSpace} />
 
             <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '15px', marginBottom: '6px' }}>Physical Activity</h3>
             <p style={styles.smallContentText}>
-              Physical activity is any movement that gets your body working, from playing outside to sports, dancing, biking, or walking. Aim for about 60 minutes of activity each day.
+              Regular movement strengthens cardiovascular health, builds muscular endurance, and releases endorphins that elevate mood and energy levels.
             </p>
             <div style={styles.halfHeightSpace} />
 
-            <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '15px', marginBottom: '6px' }}>Water</h3>
+            <h3 style={{ color: steelBlue, fontSize: '18px', fontWeight: 'bold', marginTop: '15px', marginBottom: '6px' }}>Water & Hydration</h3>
             <p style={styles.smallContentText}>
-              Water is the best drink for your body because every organ depends on it to work properly. Staying hydrated helps you feel energized and ready to learn.
+              Water regulates body temperature, lubricates joints, and facilitates nutrient transport across all cellular structures.
             </p>
           </div>
         )}
 
-        {/* Community Resources */}
+        {/* Community Resources - Fully Restored */}
         {currentPage === 'resources' && (
           <div style={{ textAlign: 'left', maxWidth: '700px' }}>
             <h2 style={{ color: steelBlue, fontSize: '24px', marginBottom: '15px' }}>Community Resources</h2>
-            <div style={{ background: '#FFF', padding: '15px', borderRadius: '8px', borderLeft: `4px solid ${steelBlue}`, marginBottom: '15px' }}>
+            <p style={styles.smallContentText}>Explore verified local and regional wellness programs, nutrition initiatives, and active living networks:</p>
+            <div style={{ background: '#FFF', padding: '15px', borderRadius: '8px', borderLeft: `4px solid ${steelBlue}`, marginBottom: '15px', marginTop: '15px' }}>
               <h4 style={{ margin: '0 0 5px 0' }}>🍎 Free Student Meals Program</h4>
-              <p style={{ margin: 0, fontSize: '14px', color: '#555' }}>Provides free breakfast and lunch to eligible students throughout the school year and summer months.</p>
+              <p style={{ margin: 0, fontSize: '14px', color: '#555' }}>Provides healthy breakfast and lunch options to students throughout the school year and designated community summer programs.</p>
             </div>
-            <div style={{ background: '#FFF', padding: '15px', borderRadius: '8px', borderLeft: `4px solid ${steelBlue}` }}>
+            <div style={{ background: '#FFF', padding: '15px', borderRadius: '8px', borderLeft: `4px solid ${steelBlue}`, marginBottom: '15px' }}>
               <h4 style={{ margin: '0 0 5px 0' }}>🏞️ Local Parks & Recreation Trails</h4>
-              <p style={{ margin: 0, fontSize: '14px', color: '#555' }}>Access free public parks, walking trails, and basketball courts in your neighborhood.</p>
+              <p style={{ margin: 0, fontSize: '14px', color: '#555' }}>Access free public walking tracks, athletic fields, and nature preserves in your local area.</p>
             </div>
+            <a href="https://www.cdc.gov/healthyschools/index.htm" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>
+              CDC Healthy Schools Guidelines
+            </a>
+            <a href="https://www.nutrition.gov" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>
+              Nutrition.gov Dietary Resources
+            </a>
           </div>
         )}
 
-        {/* Survey */}
+        {/* Survey - Full Checkbox & Radio Options Restored */}
         {currentPage === 'survey' && (
           <div style={{ textAlign: 'left', maxWidth: '700px' }}>
             <h2 style={{ color: steelBlue, fontSize: '24px', marginBottom: '15px' }}>Student Healthy Habits Survey</h2>
@@ -1204,7 +1230,14 @@ export default function App() {
             <form onSubmit={handleSurveySubmit} style={{ backgroundColor: '#FFF', padding: '25px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div>
                 <p style={{ fontWeight: 'bold', marginBottom: '8px' }}>1. Which healthy habit is the hardest for you to practice consistently?</p>
-                {['Getting enough sleep', 'Drinking enough water', 'Being physically active'].map((opt) => (
+                {[
+                  'Getting enough sleep',
+                  'Drinking enough water',
+                  'Eating fruits and vegetables',
+                  'Being physically active',
+                  'Limiting sugary drinks or ultra-processed foods',
+                  'Nothing in particular right now',
+                ].map((opt) => (
                   <label key={opt} style={{ display: 'block', fontSize: '14px', marginBottom: '4px', cursor: 'pointer' }}>
                     <input
                       type="radio"
@@ -1217,22 +1250,128 @@ export default function App() {
                   </label>
                 ))}
               </div>
+
+              <div>
+                <p style={{ fontWeight: 'bold', marginBottom: '8px' }}>2. What makes healthy habits difficult for you? (Select all that apply)</p>
+                {[
+                  "I don't have enough time",
+                  'Healthy foods or activities cost too much',
+                  "I don't have transportation",
+                  'I have too much homework or other responsibilities',
+                  "I don't have a safe place to be active",
+                  "I don't know where to find healthy resources",
+                  'Something else',
+                  'Nothing in particular right now',
+                ].map((opt) => (
+                  <label key={opt} style={{ display: 'block', fontSize: '14px', marginBottom: '4px', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={studentSurvey.difficulties.includes(opt)}
+                      onChange={() => handleCheckboxChange('difficulties', opt)}
+                    />{' '}
+                    {opt}
+                  </label>
+                ))}
+              </div>
+
+              <div>
+                <p style={{ fontWeight: 'bold', marginBottom: '8px' }}>3. Which free community resources would you like to learn more about? (Select all that apply)</p>
+                {[
+                  'Free student meals',
+                  'Food pantries',
+                  'Recreation centers',
+                  'Parks, playgrounds, and trails',
+                  'Youth sports',
+                  'Homework help or tutoring',
+                  'Mentoring programs',
+                  'None right now',
+                ].map((opt) => (
+                  <label key={opt} style={{ display: 'block', fontSize: '14px', marginBottom: '4px', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={studentSurvey.resourcesOfInterest.includes(opt)}
+                      onChange={() => handleCheckboxChange('resourcesOfInterest', opt)}
+                    />{' '}
+                    {opt}
+                  </label>
+                ))}
+              </div>
+
+              <div>
+                <p style={{ fontWeight: 'bold', marginBottom: '8px' }}>4. How has practicing healthy habits affected you this month? (Select all that apply)</p>
+                {[
+                  'I have more energy',
+                  'I can focus better in class',
+                  'I’m sleeping better or more',
+                  'My mood has improved',
+                  'I feel stronger or more active',
+                  'I haven’t noticed a difference, yet',
+                ].map((opt) => (
+                  <label key={opt} style={{ display: 'block', fontSize: '14px', marginBottom: '4px', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={studentSurvey.effects.includes(opt)}
+                      onChange={() => handleCheckboxChange('effects', opt)}
+                    />{' '}
+                    {opt}
+                  </label>
+                ))}
+              </div>
+
+              <div>
+                <p style={{ fontWeight: 'bold', marginBottom: '8px' }}>5. Would you like more healthy habit tips and local resources?</p>
+                {['Yes', 'Maybe later', 'No thanks'].map((opt) => (
+                  <label key={opt} style={{ display: 'block', fontSize: '14px', marginBottom: '4px', cursor: 'pointer' }}>
+                    <input
+                      type="radio"
+                      name="wantsMoreTips"
+                      value={opt}
+                      checked={studentSurvey.wantsMoreTips === opt}
+                      onChange={(e) => setStudentSurvey({ ...studentSurvey, wantsMoreTips: e.target.value })}
+                    />{' '}
+                    {opt}
+                  </label>
+                ))}
+              </div>
+
               <button type="submit" style={{ ...styles.button, width: '200px' }}>Submit Survey</button>
             </form>
           </div>
         )}
 
-        {/* Survey Results (Teacher View) */}
+        {/* Survey Results (Teacher View) - Corrected Dynamic Calculations */}
         {currentPage === 'survey-results' && currentUserRole === 'Teacher' && (
           <div style={{ textAlign: 'left', maxWidth: '700px' }}>
             <h2 style={{ color: steelBlue, fontSize: '24px', marginBottom: '15px' }}>Classroom Survey Results</h2>
-            <div style={{ backgroundColor: '#FFF', padding: '20px', borderRadius: '8px' }}>
-              <h4 style={{ color: steelBlue, marginBottom: '10px' }}>Top Hardest Habits Reported:</h4>
-              <ul style={{ paddingLeft: '20px', lineHeight: '1.8' }}>
-                <li>Getting enough sleep: <strong>{getAnswerCount('hardestHabit', 'Getting enough sleep')} responses</strong></li>
-                <li>Drinking enough water: <strong>{getAnswerCount('hardestHabit', 'Drinking enough water')} responses</strong></li>
-                <li>Being physically active: <strong>{getAnswerCount('hardestHabit', 'Being physically active')} responses</strong></li>
-              </ul>
+            <p style={{ color: '#555', marginBottom: '20px' }}>Aggregated feedback submitted by students in classroom: <strong>{currentUserClassroom}</strong></p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div style={{ backgroundColor: '#FFF', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                <h4 style={{ margin: '0 0 10px 0', color: steelBlue }}>Top Hardest Habits:</h4>
+                <ul style={{ paddingLeft: '20px', margin: 0, lineHeight: '1.8' }}>
+                  <li>Getting enough sleep: <strong>{getAnswerCount('hardestHabit', 'Getting enough sleep')} responses</strong></li>
+                  <li>Drinking enough water: <strong>{getAnswerCount('hardestHabit', 'Drinking enough water')} responses</strong></li>
+                  <li>Being physically active: <strong>{getAnswerCount('hardestHabit', 'Being physically active')} responses</strong></li>
+                </ul>
+              </div>
+
+              <div style={{ backgroundColor: '#FFF', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                <h4 style={{ margin: '0 0 10px 0', color: steelBlue }}>Common Obstacles Identified:</h4>
+                <ul style={{ paddingLeft: '20px', margin: 0, lineHeight: '1.8' }}>
+                  <li>Not enough time: <strong>{getAnswerCount('difficulties', "I don't have enough time")} responses</strong></li>
+                  <li>Too much homework / responsibilities: <strong>{getAnswerCount('difficulties', 'I have too much homework or other responsibilities')} responses</strong></li>
+                  <li>No safe place to be active: <strong>{getAnswerCount('difficulties', "I don't have a safe place to be active")} responses</strong></li>
+                </ul>
+              </div>
+
+              <div style={{ backgroundColor: '#FFF', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                <h4 style={{ margin: '0 0 10px 0', color: steelBlue }}>Requested Resources:</h4>
+                <ul style={{ paddingLeft: '20px', margin: 0, lineHeight: '1.8' }}>
+                  <li>Free student meals: <strong>{getAnswerCount('resourcesOfInterest', 'Free student meals')} responses</strong></li>
+                  <li>Parks & trails: <strong>{getAnswerCount('resourcesOfInterest', 'Parks, playgrounds, and trails')} responses</strong></li>
+                  <li>Homework help / Tutoring: <strong>{getAnswerCount('resourcesOfInterest', 'Homework help or tutoring')} responses</strong></li>
+                </ul>
+              </div>
             </div>
           </div>
         )}
