@@ -7,10 +7,24 @@ import sidebarLogo from './assets/new-sidebar-logo.png';
 // --- BACKGROUND LOOKUP TABLES (Lookup 1, Lookup 2, Lookup 3) ---
 const Lookup1: string[][] = [
   ["Grade", "Sleep", "Physical Activity", "Water", "Fruits & Veg", "Whole Foods", "UPF", "Sugary Drinks", "Screen Time", "Outdoor Time", "Mindfulness", "Reading"],
-  ["K - 5th", "9 - 12 hours / night", "60+ minutes / day", "6 - 9 cups / day", ">= 5 servings / day", ">= 80% / day", "<= 20% / day", "0 drinks / day", "<= 2 hrs", ">= 60 mins", "3 stars", "20 mins"],
-  ["6th - 8th", "8 - 10 hours / night", "60+ minutes / day", "8 - 11 cups / day", ">= 5 servings / day", ">= 80% / day", "<= 20% / day", "0 - 1 drinks / day", "<= 2 hrs", ">= 60 mins", "3 stars", "20 mins"],
-  ["9th - 12th", "8 - 10 hours / night", "60+ minutes / day", "9 - 13 cups / day", ">= 5 servings / day", ">= 80% / day", "<= 20% / day", "0 - 1 drinks / day", "<= 2 hrs", ">= 60 mins", "3 stars", "20 mins"],
+  ["K - 5th", "9-12 hrs", "60 mins", "6-9 cups", ">= 5 servings", ">= 80%", "<= 20%", "0 drinks", "<= 2 hrs", ">= 60 mins", "10 mins", "20 mins"],
+  ["6th - 8th", "8-10 hrs", "60 mins", "8-11 cups", ">= 5 servings", ">= 80%", "<= 20%", "0-1 drinks", "<= 2 hrs", ">= 60 mins", "10 mins", "20 mins"],
+  ["9th - 12th", "8-10 hrs", "60 mins", "8-11 cups", ">= 5 servings", ">= 80%", "<= 20%", "0-1 drinks", "<= 2 hrs", ">= 60 mins", "10 mins", "20 mins"],
   ["Teacher", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A"]
+];
+
+const Lookup2: string[][] = [
+  ["Grade", "Water Min", "Water Target", "Water Max", "Sleep Min", "Sleep Target", "Sleep Max", "FruitMin", "Fruit Target", "Fruit Max", "WholeMin", "Whole Target", "Whole Max", "UPF Min", "UPF Target", "UPF Max"],
+  ["K - 5th", "6", "8", "9", "9", "10", "12", "3", "5", "8", "60%", "80%", "100%", "0%", "10%", "20%"],
+  ["6th - 8th", "8", "10", "11", "8", "9", "10", "3", "5", "8", "60%", "80%", "100%", "0%", "10%", "20%"],
+  ["9th - 12th", "8", "10", "11", "8", "9", "10", "3", "5", "8", "60%", "80%", "100%", "0%", "10%", "20%"]
+];
+
+const Lookup3: string[][] = [
+  ["Grade", "Activity Min", "Activity Target", "Activity Max", "Screen Min", "Screen Target", "Screen Max", "Outdoor Min", "Outdoor Target", "Outdoor Max", "MindMin", "Mind Target", "Mind Max", "ReadMin", "Read Target", "Read Max", "SugarMin", "Sugar Target", "Sugar Max"],
+  ["K - 5th", "30", "60", "120", "0", "1", "2", "30", "60", "120", "5", "10", "20", "10", "20", "45", "0", "0", "1"],
+  ["6th - 8th", "30", "60", "120", "0", "1", "2", "30", "60", "120", "5", "10", "20", "10", "20", "45", "0", "0", "1"],
+  ["9th - 12th", "30", "60", "120", "0", "1", "2", "30", "60", "120", "5", "10", "20", "10", "20", "45", "0", "0", "1"]
 ];
 
 // --- Habit Types & Definitions ---
@@ -62,11 +76,10 @@ interface SurveyResponse {
   effects: string[];
   wantsMoreTips: string;
   teacherChallenge?: string;
-  submittedDate?: string; // YYYY-MM-DD
 }
 
 export default function App() {
-  // Navigation & Auth State
+  // Navigation & Auth State - Defaults to 'login' if no active session
   const [currentUser, setCurrentUser] = useState<string | null>(() => {
     return localStorage.getItem('healthy_habits_current_user') || null;
   });
@@ -119,8 +132,7 @@ export default function App() {
     resourcesOfInterest: [],
     effects: [],
     wantsMoreTips: '',
-    teacherChallenge: '',
-    submittedDate: ''
+    teacherChallenge: ''
   });
   const [surveySuccessMsg, setSurveySuccessMsg] = useState('');
 
@@ -177,12 +189,19 @@ export default function App() {
   useEffect(() => {
     if (currentUser) {
       localStorage.setItem('healthy_habits_current_user', currentUser);
+      if (usersDb[currentUser]) {
+        setStudentSurvey(prev => ({
+          ...prev,
+          studentUsername: currentUser,
+          classroomCode: usersDb[currentUser].classroomCode || ''
+        }));
+      }
     } else {
       localStorage.removeItem('healthy_habits_current_user');
     }
-  }, [currentUser]);
+  }, [currentUser, usersDb]);
 
-  // Load existing entry values for today into logFormValues and success message state
+  // Load existing entry values for today into logFormValues when switching to 'log' or when user changes
   useEffect(() => {
     if (currentUser && usersDb[currentUser]) {
       const todayISO = getTodayESTISO();
@@ -198,7 +217,6 @@ export default function App() {
           sugaryDrinks: existingEntry.sugaryDrinks ?? 0,
           mood: existingEntry.mood ?? 1,
         });
-        setLogSuccessMsg('Your data has been successfully submitted.');
       } else {
         setLogFormValues({
           sleep: 0,
@@ -210,49 +228,9 @@ export default function App() {
           sugaryDrinks: 0,
           mood: 1,
         });
-        setLogSuccessMsg('');
       }
     }
-  }, [currentUser, currentPage, usersDb]);
-
-  // Load existing survey responses for today
-  useEffect(() => {
-    if (currentUser && usersDb[currentUser]) {
-      const todayISO = getTodayESTISO();
-      const userCode = usersDb[currentUser].classroomCode || '';
-      const existingSurvey = surveyData.find(
-        (s) => s.studentUsername === currentUser && s.submittedDate === todayISO
-      );
-
-      if (existingSurvey) {
-        setStudentSurvey({
-          studentUsername: currentUser,
-          classroomCode: userCode,
-          hardestHabit: existingSurvey.hardestHabit || '',
-          difficulties: existingSurvey.difficulties || [],
-          resourcesOfInterest: existingSurvey.resourcesOfInterest || [],
-          effects: existingSurvey.effects || [],
-          wantsMoreTips: existingSurvey.wantsMoreTips || '',
-          teacherChallenge: existingSurvey.teacherChallenge || '',
-          submittedDate: todayISO
-        });
-        setSurveySuccessMsg('Your survey responses have been successfully submitted.');
-      } else {
-        setStudentSurvey({
-          studentUsername: currentUser,
-          classroomCode: userCode,
-          hardestHabit: '',
-          difficulties: [],
-          resourcesOfInterest: [],
-          effects: [],
-          wantsMoreTips: '',
-          teacherChallenge: '',
-          submittedDate: ''
-        });
-        setSurveySuccessMsg('');
-      }
-    }
-  }, [currentUser, currentPage, surveyData, usersDb]);
+  }, [currentUser, currentPage]);
 
   // Helper: Get EST ISO Date String (YYYY-MM-DD)
   const getTodayESTISO = (): string => {
@@ -286,7 +264,7 @@ export default function App() {
 
   // User & Classroom Lookup Helpers
   const getCurrentUserGrade = (): string => {
-    if (!currentUser || !usersDb[currentUser]) return '9th - 12th';
+    if (!currentUser || !usersDb[currentUser]) return 'K - 5th';
     const user = usersDb[currentUser];
     if (user.role === 'Teacher' && user.grade) {
       return user.grade;
@@ -295,7 +273,7 @@ export default function App() {
     const teacher = Object.values(usersDb).find(
       (u) => u.role === 'Teacher' && (u.classroomCode || '').trim().toLowerCase() === userCode
     );
-    return teacher?.grade || user.grade || '9th - 12th';
+    return teacher?.grade || user.grade || 'K - 5th';
   };
 
   const getCurrentUserRole = (): 'Teacher' | 'Student' | 'N/A' => {
@@ -327,127 +305,74 @@ export default function App() {
     if (colIdx === -1) return 'N/A';
 
     const grade = gradeOverride || getCurrentUserGrade();
-    let rowIdx = 3; // Default 9th-12th / unknown / N/A
-    if (grade === 'K - 5th') rowIdx = 1;
-    else if (grade === '6th - 8th') rowIdx = 2;
+    const role = getCurrentUserRole();
 
-    const rawGoal = Lookup1[rowIdx]?.[colIdx] || 'N/A';
-    // Edit A: Replace "10 minutes" with "3 stars" for mood/mindfulness goal
-    if (rawGoal === '10 minutes') {
-      return '3 stars';
-    }
-    return rawGoal;
+    let rowIdx = 1; // Default K-5th
+    if (grade === '6th - 8th') rowIdx = 2;
+    if (grade === '9th - 12th') rowIdx = 3;
+    if (role === 'Teacher' && !gradeOverride) rowIdx = 4;
+
+    return Lookup1[rowIdx]?.[colIdx] || 'N/A';
   };
 
+  // Dynamic Lookup 2 & 3 evaluation helpers
+  const getLookup2Metric = (metricName: string, grade: string): number => {
+    let rowIdx = 1;
+    if (grade === '6th - 8th') rowIdx = 2;
+    if (grade === '9th - 12th') rowIdx = 3;
+    const headers = Lookup2[0];
+    const colIdx = headers.findIndex(h => h.toLowerCase() === metricName.toLowerCase());
+    if (colIdx === -1) return 0;
+    const valStr = Lookup2[rowIdx]?.[colIdx] || '0';
+    return parseFloat(valStr.replace('%', '')) || 0;
+  };
+
+  const getLookup3Metric = (metricName: string, grade: string): number => {
+    let rowIdx = 1;
+    if (grade === '6th - 8th') rowIdx = 2;
+    if (grade === '9th - 12th') rowIdx = 3;
+    const headers = Lookup3[0];
+    const colIdx = headers.findIndex(h => h.toLowerCase() === metricName.toLowerCase());
+    if (colIdx === -1) return 0;
+    const valStr = Lookup3[rowIdx]?.[colIdx] || '0';
+    return parseFloat(valStr.replace('%', '')) || 0;
+  };
+
+  // Habit Configs Dynamically Generated from Lookup Tables for any Grade
   const getHabitsConfig = (grade: string): HabitConfig[] => {
-    if (grade === 'K - 5th') {
-      return [
-        { key: 'sleep', label: 'Sleep', icon: '😴', selections: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], selectionLabels: { 12: '12+' }, goal: getGoalFromLookup1('sleep', grade) },
-        { key: 'physicalActivity', label: 'Physical Activity', icon: '🏃', selections: [0, 15, 30, 45, 60], selectionLabels: { 60: '60+' }, goal: getGoalFromLookup1('physicalActivity', grade) },
-        { key: 'water', label: 'Water', icon: '💧', selections: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], selectionLabels: { 9: '9+' }, goal: getGoalFromLookup1('water', grade) },
-        { key: 'fruitsVeg', label: 'Fruits & Vegetables', icon: '🍎', selections: [0, 1, 2, 3, 4, 5], selectionLabels: { 5: '5+' }, goal: getGoalFromLookup1('fruitsVeg', grade) },
-        { key: 'wholeFoods', label: 'Whole Foods', icon: '🥗', selections: [0, 10, 20, 30, 40, 50, 60, 70, 80], selectionLabels: { 80: '80+' }, goal: getGoalFromLookup1('wholeFoods', grade) },
-        { key: 'upf', label: 'Ultra-Processed Foods', icon: '🍔', selections: [0, 10, 20, 30, 40], selectionLabels: { 40: '40+' }, goal: getGoalFromLookup1('upf', grade) },
-        { key: 'sugaryDrinks', label: 'Sugary Drinks', icon: '🧃', selections: [0, 1], selectionLabels: { 1: '1+' }, goal: getGoalFromLookup1('sugaryDrinks', grade) },
-        { key: 'mood', label: 'Mood', icon: '⭐', selections: [1, 2, 3], goal: getGoalFromLookup1('mood', grade) },
-      ];
-    } else if (grade === '6th - 8th') {
-      return [
-        { key: 'sleep', label: 'Sleep', icon: '😴', selections: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], selectionLabels: { 10: '10+' }, goal: getGoalFromLookup1('sleep', grade) },
-        { key: 'physicalActivity', label: 'Physical Activity', icon: '🏃', selections: [0, 15, 30, 45, 60], selectionLabels: { 60: '60+' }, goal: getGoalFromLookup1('physicalActivity', grade) },
-        { key: 'water', label: 'Water', icon: '💧', selections: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], selectionLabels: { 11: '11+' }, goal: getGoalFromLookup1('water', grade) },
-        { key: 'fruitsVeg', label: 'Fruits & Vegetables', icon: '🍎', selections: [0, 1, 2, 3, 4, 5], selectionLabels: { 5: '5+' }, goal: getGoalFromLookup1('fruitsVeg', grade) },
-        { key: 'wholeFoods', label: 'Whole Foods', icon: '🥗', selections: [0, 10, 20, 30, 40, 50, 60, 70, 80], selectionLabels: { 80: '80+' }, goal: getGoalFromLookup1('wholeFoods', grade) },
-        { key: 'upf', label: 'Ultra-Processed Foods', icon: '🍔', selections: [0, 10, 20, 30, 40], selectionLabels: { 40: '40+' }, goal: getGoalFromLookup1('upf', grade) },
-        { key: 'sugaryDrinks', label: 'Sugary Drinks', icon: '🧃', selections: [0, 1, 2], selectionLabels: { 2: '2+' }, goal: getGoalFromLookup1('sugaryDrinks', grade) },
-        { key: 'mood', label: 'Mood', icon: '⭐', selections: [1, 2, 3], goal: getGoalFromLookup1('mood', grade) },
-      ];
-    } else {
-      // 9th - 12th OR unknown OR N/A
-      return [
-        { key: 'sleep', label: 'Sleep', icon: '😴', selections: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], selectionLabels: { 10: '10+' }, goal: getGoalFromLookup1('sleep', grade) },
-        { key: 'physicalActivity', label: 'Physical Activity', icon: '🏃', selections: [0, 15, 30, 45, 60], selectionLabels: { 60: '60+' }, goal: getGoalFromLookup1('physicalActivity', grade) },
-        { key: 'water', label: 'Water', icon: '💧', selections: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13], selectionLabels: { 13: '13+' }, goal: getGoalFromLookup1('water', grade) },
-        { key: 'fruitsVeg', label: 'Fruits & Vegetables', icon: '🍎', selections: [0, 1, 2, 3, 4, 5], selectionLabels: { 5: '5+' }, goal: getGoalFromLookup1('fruitsVeg', grade) },
-        { key: 'wholeFoods', label: 'Whole Foods', icon: '🥗', selections: [0, 10, 20, 30, 40, 50, 60, 70, 80], selectionLabels: { 80: '80+' }, goal: getGoalFromLookup1('wholeFoods', grade) },
-        { key: 'upf', label: 'Ultra-Processed Foods', icon: '🍔', selections: [0, 10, 20, 30, 40], selectionLabels: { 40: '40+' }, goal: getGoalFromLookup1('upf', grade) },
-        { key: 'sugaryDrinks', label: 'Sugary Drinks', icon: '🧃', selections: [0, 1, 2], selectionLabels: { 2: '2+' }, goal: getGoalFromLookup1('sugaryDrinks', grade) },
-        { key: 'mood', label: 'Mood', icon: '⭐', selections: [1, 2, 3], goal: getGoalFromLookup1('mood', grade) },
-      ];
-    }
+    const isElementary = grade === 'K - 5th';
+    return [
+      { key: 'sleep', label: 'Sleep', icon: '😴', selections: isElementary ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], selectionLabels: isElementary ? { 12: '12+' } : { 10: '10+' }, goal: getGoalFromLookup1('sleep', grade) },
+      { key: 'physicalActivity', label: 'Physical Activity', icon: '🏃', selections: [0, 15, 30, 45, 60], selectionLabels: { 60: '60+' }, goal: getGoalFromLookup1('physicalActivity', grade) },
+      { key: 'water', label: 'Water', icon: '💧', selections: isElementary ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], selectionLabels: isElementary ? { 9: '9+' } : { 11: '11+' }, goal: getGoalFromLookup1('water', grade) },
+      { key: 'fruitsVeg', label: 'Fruits & Vegetables', icon: '🍎', selections: [0, 1, 2, 3, 4, 5], selectionLabels: { 5: '5+' }, goal: getGoalFromLookup1('fruitsVeg', grade) },
+      { key: 'wholeFoods', label: 'Whole Foods', icon: '🥗', selections: [0, 10, 20, 30, 40, 50, 60, 70, 80], selectionLabels: { 80: '80+' }, goal: getGoalFromLookup1('wholeFoods', grade) },
+      { key: 'upf', label: 'Ultra-Processed Foods', icon: '🍔', selections: [0, 10, 20, 30, 40], selectionLabels: { 40: '40+' }, goal: getGoalFromLookup1('upf', grade) },
+      { key: 'sugaryDrinks', label: 'Sugary Drinks', icon: '🧃', selections: [0, 1, 2], selectionLabels: { 2: '2+' }, goal: getGoalFromLookup1('sugaryDrinks', grade) },
+      { key: 'mood', label: 'Mood', icon: '⭐', selections: [1, 2, 3], goal: getGoalFromLookup1('mood', grade) },
+    ];
   };
 
   const getHabitColor = (key: HabitKey, val: number, grade: string): 'red' | 'yellow' | 'green' => {
-    if (grade === 'K - 5th') {
+    if (grade === '9th - 12th') {
+      if (key === 'water') {
+        if (val >= 10) return 'green';
+        if (val >= 8) return 'yellow';
+        return 'red';
+      }
       if (key === 'sleep') {
         if (val >= 9) return 'green';
-        if (val === 8) return 'yellow';
-        return 'red';
-      }
-      if (key === 'physicalActivity') {
-        if (val >= 60) return 'green';
-        if (val === 45) return 'yellow';
-        return 'red';
-      }
-      if (key === 'water') {
-        if (val >= 6) return 'green';
-        if (val === 5) return 'yellow';
+        if (val >= 8) return 'yellow';
         return 'red';
       }
       if (key === 'fruitsVeg') {
         if (val >= 5) return 'green';
-        if (val === 4) return 'yellow';
-        return 'red';
-      }
-      if (key === 'wholeFoods') {
-        if (val >= 80) return 'green';
-        if (val === 70) return 'yellow';
-        return 'red';
-      }
-      if (key === 'upf') {
-        if (val <= 20) return 'green';
-        if (val === 30) return 'yellow';
-        return 'red';
-      }
-      if (key === 'sugaryDrinks') {
-        if (val === 0) return 'green';
-        if (val >= 1) return 'red';
-        return 'red';
-      }
-      if (key === 'mood') {
-        if (val === 3) return 'green';
-        if (val === 2) return 'yellow';
-        return 'red';
-      }
-    } else if (grade === '6th - 8th') {
-      if (key === 'sleep') {
-        if (val >= 8) return 'green';
-        if (val === 7) return 'yellow';
+        if (val >= 3) return 'yellow';
         return 'red';
       }
       if (key === 'physicalActivity') {
         if (val >= 60) return 'green';
-        if (val === 45) return 'yellow';
-        return 'red';
-      }
-      if (key === 'water') {
-        if (val >= 8) return 'green';
-        if (val === 7) return 'yellow';
-        return 'red';
-      }
-      if (key === 'fruitsVeg') {
-        if (val >= 5) return 'green';
-        if (val === 4) return 'yellow';
-        return 'red';
-      }
-      if (key === 'wholeFoods') {
-        if (val >= 80) return 'green';
-        if (val === 70) return 'yellow';
-        return 'red';
-      }
-      if (key === 'upf') {
-        if (val <= 20) return 'green';
-        if (val === 30) return 'yellow';
+        if (val >= 30) return 'yellow';
         return 'red';
       }
       if (key === 'sugaryDrinks') {
@@ -455,53 +380,41 @@ export default function App() {
         if (val === 1) return 'yellow';
         return 'red';
       }
-      if (key === 'mood') {
-        if (val === 3) return 'green';
-        if (val === 2) return 'yellow';
-        return 'red';
-      }
-    } else {
-      // 9th - 12th or unknown or N/A
-      if (key === 'sleep') {
-        if (val >= 8) return 'green';
-        if (val === 7) return 'yellow';
-        return 'red';
-      }
-      if (key === 'physicalActivity') {
-        if (val >= 60) return 'green';
-        if (val === 45) return 'yellow';
-        return 'red';
-      }
-      if (key === 'water') {
-        if (val >= 9) return 'green';
-        if (val === 8) return 'yellow';
-        return 'red';
-      }
-      if (key === 'fruitsVeg') {
-        if (val >= 5) return 'green';
-        if (val === 4) return 'yellow';
-        return 'red';
-      }
-      if (key === 'wholeFoods') {
-        if (val >= 80) return 'green';
-        if (val === 70) return 'yellow';
-        return 'red';
-      }
-      if (key === 'upf') {
-        if (val <= 20) return 'green';
-        if (val === 30) return 'yellow';
-        return 'red';
-      }
-      if (key === 'sugaryDrinks') {
-        if (val === 0) return 'green';
-        if (val === 1) return 'yellow';
-        return 'red';
-      }
-      if (key === 'mood') {
-        if (val === 3) return 'green';
-        if (val === 2) return 'yellow';
-        return 'red';
-      }
+    }
+
+    if (key === 'water') {
+      const target = getLookup2Metric('Water Target', grade);
+      const min = getLookup2Metric('Water Min', grade);
+      if (val >= target) return 'green';
+      if (val >= min) return 'yellow';
+      return 'red';
+    }
+    if (key === 'sleep') {
+      const target = getLookup2Metric('Sleep Target', grade);
+      const min = getLookup2Metric('Sleep Min', grade);
+      if (val >= target) return 'green';
+      if (val >= min) return 'yellow';
+      return 'red';
+    }
+    if (key === 'fruitsVeg') {
+      const target = getLookup2Metric('Fruit Target', grade);
+      const min = getLookup2Metric('FruitMin', grade);
+      if (val >= target) return 'green';
+      if (val >= min) return 'yellow';
+      return 'red';
+    }
+    if (key === 'physicalActivity') {
+      const target = getLookup3Metric('Activity Target', grade);
+      const min = getLookup3Metric('Activity Min', grade);
+      if (val >= target) return 'green';
+      if (val >= min) return 'yellow';
+      return 'red';
+    }
+    if (key === 'sugaryDrinks') {
+      const target = getLookup3Metric('Sugar Target', grade);
+      if (val <= target) return 'green';
+      if (val === 1) return 'yellow';
+      return 'red';
     }
     return val >= 8 ? 'green' : val === 7 ? 'yellow' : 'red';
   };
@@ -633,22 +546,32 @@ export default function App() {
 
   const handleSurveySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const todayISO = getTodayESTISO();
     const finalSurvey = {
       ...studentSurvey,
       studentUsername: currentUser || 'Anonymous',
-      classroomCode: getCurrentUserClassroomCode(),
-      submittedDate: todayISO
+      classroomCode: getCurrentUserClassroomCode()
     };
 
     try {
-      const docId = `survey_${currentUser || 'anon'}_${todayISO}`;
+      const docId = `survey_${currentUser || 'anon'}_${Date.now()}`;
       await setDoc(doc(db, 'surveys', docId), finalSurvey);
       setSurveySuccessMsg('Your survey responses have been successfully submitted.');
     } catch (err) {
       console.error('Error submitting survey to cloud:', err);
       alert('Failed to submit survey. Please check connection.');
     }
+  };
+
+  const getAnswerCount = (category: keyof SurveyResponse, answerText: string) => {
+    const code = getCurrentUserClassroomCode().trim().toLowerCase();
+    return surveyData.filter((resp) => {
+      if ((resp.classroomCode || '').trim().toLowerCase() !== code) return false;
+      const val = resp[category];
+      if (Array.isArray(val)) {
+        return val.includes(answerText);
+      }
+      return val === answerText;
+    }).length;
   };
 
   // Calculation Helpers
@@ -901,6 +824,30 @@ export default function App() {
       color: steelBlue,
       fontWeight: 'bold',
       fontSize: '16px'
+    },
+    resourceIndentLink: {
+      display: 'block',
+      marginLeft: '20px',
+      color: steelBlue,
+      textDecoration: 'underline',
+      marginBottom: '6px',
+      fontSize: '14px',
+      fontFamily: manropeFont
+    },
+    smallContentHeader: {
+      fontSize: '15px',
+      fontWeight: 'bold',
+      margin: '10px 0 3px 0',
+      color: '#202124'
+    },
+    smallContentText: {
+      fontSize: '13px',
+      margin: '0 0 8px 0',
+      lineHeight: '1.5',
+      color: '#202124'
+    },
+    halfHeightSpace: {
+      height: '5px'
     },
     metaInfoLine: {
       color: charBlack,
@@ -1403,7 +1350,111 @@ export default function App() {
         {/* Learning Center */}
         {currentPage === 'learning' && (
           <div style={{ textAlign: 'left', maxWidth: '800px' }}>
-            <h2 style={styles.pageHeaderTitle}>Learning Center</h2>
+            <h2 style={styles.pageHeaderTitle}>
+              Learning Center
+            </h2>
+
+            <div style={{ color: steelBlue, fontWeight: 'bold', fontSize: '16px', marginTop: '15px', marginBottom: '4px' }}>Sleep</div>
+            <p style={styles.smallContentText}>
+              Sleep is when your brain and body recharge so you can learn, grow, and feel your best. Getting the right amount of sleep every night helps you succeed in school, sports, and everyday life.
+            </p>
+            <div style={styles.smallContentHeader}>1. Your Brain Gets Stronger</div>
+            <p style={styles.smallContentText}>While you sleep, your brain organizes what you learned during the day and stores it as memories. Good sleep helps you focus, solve problems, and remember what you study.</p>
+            <div style={styles.smallContentHeader}>2. Your Body Grows While You Sleep</div>
+            <p style={styles.smallContentText}>Your body releases important growth hormones while you sleep. Sleep also helps your muscles recover, strengthens your immune system, and gives you energy for tomorrow.</p>
+            <div style={styles.smallContentHeader}>3. Better Sleep = Better Days</div>
+            <p style={styles.smallContentText}>Students who get enough sleep are more likely to feel happier, pay attention in class, and make good decisions. A regular bedtime can make a big difference.</p>
+
+            <div style={styles.halfHeightSpace} />
+
+            <div style={{ color: steelBlue, fontWeight: 'bold', fontSize: '16px', marginTop: '15px', marginBottom: '4px' }}>Physical Activity</div>
+            <p style={styles.smallContentText}>
+              Physical activity is any movement that gets your body working, from playing outside to sports, dancing, biking, or walking. Aim for about 60 minutes of activity each day.
+            </p>
+            <div style={styles.smallContentHeader}>1. Exercise Builds a Strong Body</div>
+            <p style={styles.smallContentText}>Being active strengthens your heart, muscles, and bones while improving balance, coordination, and endurance.</p>
+            <div style={styles.smallContentHeader}>2. Moving Helps Your Brain</div>
+            <p style={styles.smallContentText}>Exercise increases blood flow to your brain, helping you concentrate, learn new things, and think more clearly.</p>
+            <div style={styles.smallContentHeader}>3. Movement Boosts Your Mood</div>
+            <p style={styles.smallContentText}>Physical activity releases chemicals in your brain that can help you feel happier, less stressed, and more confident.</p>
+
+            <div style={styles.halfHeightSpace} />
+
+            <div style={{ color: steelBlue, fontWeight: 'bold', fontSize: '16px', marginTop: '15px', marginBottom: '4px' }}>Water</div>
+            <p style={styles.smallContentText}>
+              Water is the best drink for your body because every organ depends on it to work properly. Staying hydrated helps you feel energized and ready to learn.
+            </p>
+            <div style={styles.smallContentHeader}>1. Water Powers Your Brain</div>
+            <p style={styles.smallContentText}>Even mild dehydration can make it harder to concentrate, remember information, and stay alert during school.</p>
+            <div style={styles.smallContentHeader}>2. Water Keeps Your Body Running</div>
+            <p style={styles.smallContentText}>Water helps regulate your body temperature, moves nutrients where they're needed, and supports healthy digestion.</p>
+            <div style={styles.smallContentHeader}>3. Water Beats Sugary Drinks</div>
+            <p style={styles.smallContentText}>Choosing water instead of sugary drinks helps protect your teeth and gives your body what it needs without added sugar.</p>
+
+            <div style={styles.halfHeightSpace} />
+
+            <div style={{ color: steelBlue, fontWeight: 'bold', fontSize: '16px', marginTop: '15px', marginBottom: '4px' }}>Fruits & Vegetables</div>
+            <p style={styles.smallContentText}>
+              Fruits and vegetables are packed with vitamins, minerals, fiber, and antioxidants that help your body stay healthy. Eating a colorful variety gives your body many important nutrients.
+            </p>
+            <div style={styles.smallContentHeader}>1. Colors Mean Different Nutrients</div>
+            <p style={styles.smallContentText}>Red, orange, yellow, green, blue, and purple fruits and vegetables all contain different nutrients that help your body in different ways.</p>
+            <div style={styles.smallContentHeader}>2. Fuel for Your Body</div>
+            <p style={styles.smallContentText}>Fruits and vegetables help support healthy digestion, strengthen your immune system, and provide steady energy throughout the day.</p>
+            <div style={styles.smallContentHeader}>3. Healthy Habits Start Young</div>
+            <p style={styles.smallContentText}>Eating plenty of fruits and vegetables while you're growing helps build lifelong healthy eating habits.</p>
+
+            <div style={styles.halfHeightSpace} />
+
+            <div style={{ color: steelBlue, fontWeight: 'bold', fontSize: '16px', marginTop: '15px', marginBottom: '4px' }}>Whole Foods</div>
+            <p style={styles.smallContentText}>
+              Whole foods are foods that are close to their natural form with little processing, like apples, oatmeal, eggs, beans, yogurt, nuts, and fresh vegetables. They provide the nutrients your body needs to grow and stay healthy.
+            </p>
+            <div style={styles.smallContentHeader}>1. Better Fuel</div>
+            <p style={styles.smallContentText}>Whole foods usually contain more fiber, vitamins, and minerals than highly processed foods, helping your body work its best.</p>
+            <div style={styles.smallContentHeader}>2. Longer-Lasting Energy</div>
+            <p style={styles.smallContentText}>Whole foods often help you stay full longer and provide steady energy for school, sports, and play.</p>
+            <div style={styles.smallContentHeader}>3. Small Choices Matter</div>
+            <p style={styles.smallContentText}>You don't have to eat perfectly. Choosing whole foods more often is a great way to build healthy habits over time.</p>
+
+            <div style={styles.halfHeightSpace} />
+
+            <div style={{ color: steelBlue, fontWeight: 'bold', fontSize: '16px', marginTop: '15px', marginBottom: '4px' }}>Ultra-Processed Foods</div>
+            <p style={styles.smallContentText}>
+              Ultra-processed foods are made with many added ingredients and often contain extra sugar, salt, unhealthy fats, or artificial flavors. Examples include many chips, candy, soda, and packaged desserts.
+            </p>
+            <div style={styles.smallContentHeader}>1. Fine Sometimes, Not All the Time</div>
+            <p style={styles.smallContentText}>Ultra-processed foods can be enjoyable occasionally, but eating too many may crowd out more nutritious foods your body needs.</p>
+            <div style={styles.smallContentHeader}>2. Less Nutrition</div>
+            <p style={styles.smallContentText}>Many ultra-processed foods contain fewer vitamins, minerals, and fiber than whole foods.</p>
+            <div style={styles.smallContentHeader}>3. Think About Balance</div>
+            <p style={styles.smallContentText}>You don't have to avoid these foods completely. Choosing whole foods most of the time helps your body and brain stay healthier.</p>
+
+            <div style={styles.halfHeightSpace} />
+
+            <div style={{ color: steelBlue, fontWeight: 'bold', fontSize: '16px', marginTop: '15px', marginBottom: '4px' }}>Sugary Drinks</div>
+            <p style={styles.smallContentText}>
+              Sugary drinks include soda, many sports drinks, sweet teas, fruit drinks with added sugar, and energy drinks. They often contain lots of sugar but very few nutrients.
+            </p>
+            <div style={styles.smallContentHeader}>1. Sugar Adds Up Fast</div>
+            <p style={styles.smallContentText}>One sugary drink can contain many teaspoons of added sugar. Drinking them often can make it harder to meet healthy nutrition goals.</p>
+            <div style={styles.smallContentHeader}>2. Water Is the Best Choice</div>
+            <p style={styles.smallContentText}>Water is the best way to stay hydrated before school, during sports, and throughout the day.</p>
+            <div style={styles.smallContentHeader}>3. Protect Your Smile</div>
+            <p style={styles.smallContentText}>Drinking fewer sugary beverages can help reduce the risk of cavities and keep your teeth healthier.</p>
+
+            <div style={styles.halfHeightSpace} />
+
+            <div style={{ color: steelBlue, fontWeight: 'bold', fontSize: '16px', marginTop: '15px', marginBottom: '4px' }}>Mood</div>
+            <p style={styles.smallContentText}>
+              Your mood is how you feel emotionally throughout the day. Everyone has good days and bad days, and healthy habits can help support a more positive mood over time.
+            </p>
+            <div style={styles.smallContentHeader}>1. Healthy Habits Work Together</div>
+            <p style={styles.smallContentText}>Getting enough sleep, drinking water, eating nutritious foods, and staying active all work together to help you feel your best.</p>
+            <div style={styles.smallContentHeader}>2. Your Body and Brain Are Connected</div>
+            <p style={styles.smallContentText}>When your body has the fuel, movement, and rest it needs, your brain often works better too, making it easier to learn, focus, and handle challenges.</p>
+            <div style={styles.smallContentHeader}>3. Small Habits Can Make a Big Difference</div>
+            <p style={styles.smallContentText}>No single habit controls your mood, but practicing healthy habits consistently can help you feel more energetic, focused, and ready to take on each day. If you're feeling down or overwhelmed for a long time, it's important to talk with a trusted adult, parent, teacher, or school counselor.</p>
           </div>
         )}
 
@@ -1411,6 +1462,50 @@ export default function App() {
         {currentPage === 'resources' && (
           <div style={{ textAlign: 'left', maxWidth: '700px' }}>
             <h2 style={styles.pageHeaderTitle}>Community Resources in Indianapolis, IN</h2>
+            
+            <div style={{ fontWeight: 'bold', fontSize: '15px', color: charBlack, marginTop: '10px', marginBottom: '3px' }}>Free Groceries and Meals</div>
+            <p style={styles.smallContentText}>
+              Find services where you can search for free groceries and meals if you or your family need extra help. Food pantries, specifically, help make sure everyone has access to healthy food, no matter their financial situation.
+            </p>
+            <a href="https://www.communitycompass.app/home" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>Community Compass</a>
+            <a href="https://www.foodpantries.org/ci/in-indianapolis" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>Indianapolis Food Pantries</a>
+
+            <div style={{ fontWeight: 'bold', fontSize: '15px', color: charBlack, marginTop: '15px', marginBottom: '3px' }}>Free Student Meal Services</div>
+            <p style={styles.smallContentText}>
+              Find free student meal programs that provide nutritious breakfast, lunch, and snack options, helping you stay healthy, energized, and ready to learn during the school year and summer.
+            </p>
+            <a href="https://www.myips.org/student-family-references/foodservice" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>Indianapolis Public Schools</a>
+            <a href="https://parks.indy.gov/programs/free-meals-programs/?utm_source=chatgpt.com" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>Indy Parks & Recreation</a>
+
+            <div style={{ fontWeight: 'bold', fontSize: '15px', color: charBlack, marginTop: '15px', marginBottom: '3px' }}>Youth Activities - Parks, Playgrounds, Walking Trails & Sports</div>
+            <p style={styles.smallContentText}>
+              Find parks, playgrounds, trails, and youth sports programs that provide fun and safe places for you to be active, build strength and confidence, enjoy nature, learn teamwork, and improve your physical and mental health.
+            </p>
+            <a href="https://parks.indy.gov/" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>Indy Parks & Recreation</a>
+            <a href="https://www.indy.gov/activity/find-a-trail" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>indy.gov trails</a>
+            <a href="https://anc.apm.activecommunities.com/indyparks/activity/search?onlineSiteId=0&activity_select_param=2&activity_department_ids=4&viewMode=list" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>Youth sports</a>
+
+            <div style={{ fontWeight: 'bold', fontSize: '15px', color: charBlack, marginTop: '15px', marginBottom: '3px' }}>Community Recreation Centers</div>
+            <p style={styles.smallContentText}>
+              Find a Community Center near you to stay active, learn new skills, and spend time with others. Many offer free or low-cost programs that help kids and families stay healthy, active, and connected.
+            </p>
+            <a href="https://parks.indy.gov/programs/free-meals-programs/?utm_source=chatgpt.com" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>Map of Indianapolis Community Centers</a>
+
+            <div style={{ fontWeight: 'bold', fontSize: '15px', color: charBlack, marginTop: '15px', marginBottom: '3px' }}>Homework Help</div>
+            <p style={styles.smallContentText}>
+              Find programs that offer you free or low-cost support from teachers, tutors, or volunteers to better understand schoolwork, complete assignments, and build confidence in learning.
+            </p>
+            <a href="https://www.indypl.org/services/homework-help" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>Indianapolis Public Library</a>
+
+            <div style={{ fontWeight: 'bold', fontSize: '15px', color: charBlack, marginTop: '15px', marginBottom: '3px' }}>Mentoring</div>
+            <p style={styles.smallContentText}>
+              Find a trusted adult who encourages, supports, and guides you by helping you build confidence, develop new skills, set goals, and succeed in school and life.
+            </p>
+            <a href="https://www.bebigforkids.org/" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>Big Brothers Big Sisters of Central Indiana</a>
+            <a href="https://www.bgcindy.org/" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>Boys and Girls Club of Indianapolis</a>
+            <a href="https://dreamaliveinc.org/" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>Dream Alive</a>
+            <a href="https://www.elevateindy.org/holistic-mentoring" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>Elevate Indianapolis</a>
+            <a href="https://www.starfishinitiative.org/?utm_source=chatgpt.com" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>Starfish Initiative</a>
           </div>
         )}
 
@@ -1418,6 +1513,12 @@ export default function App() {
         {currentPage === 'survey' && currentUserRole === 'Student' && (
           <div style={{ textAlign: 'left', maxWidth: '700px' }}>
             <h2 style={styles.pageHeaderTitle}>Survey</h2>
+            <div style={{ fontWeight: 'bold', fontSize: '14px', color: charBlack, marginBottom: '4px' }}>Help Us Help You!</div>
+            <p style={styles.smallContentText}>
+              Your answers can help us understand what healthy habits are easiest and hardest for students. Your responses are voluntary and anonymous. Additionally, you can find additional information, programs, and community resources that support your health, learning, and success by selecting the Community Resources page in the left hand navigation bar.
+            </p>
+            <div style={{ height: '5px' }} />
+
             <form onSubmit={handleSurveySubmit} style={{ backgroundColor: cream, padding: '25px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div>
                 <p style={{ fontWeight: 'bold', marginBottom: '8px', color: charBlack }}>Which healthy habit is the hardest for you to practice consistently?</p>
@@ -1531,6 +1632,90 @@ export default function App() {
         {currentPage === 'survey-results' && currentUserRole === 'Teacher' && (
           <div style={{ textAlign: 'left', maxWidth: '700px' }}>
             <h2 style={styles.pageHeaderTitle}>Survey Results</h2>
+            <div style={{ fontWeight: 'bold', fontSize: '14px', color: charBlack, marginBottom: '4px' }}>Information To Help Your Students!</div>
+            <p style={styles.smallContentText}>
+              Your students’ survey answers can help you understand what healthy habits are easiest and hardest for them to follow. The data below shows the total number of students in your classroom that indicated each answer to the survey questions. It can be used to provide additional information, programs, and community resources that support student health, learning, and success.
+            </p>
+            <div style={{ height: '5px' }} />
+
+            <div style={{ backgroundColor: cream, padding: '25px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div>
+                <p style={{ fontWeight: 'bold', marginBottom: '8px', color: charBlack }}>Which healthy habit is the hardest for you to practice consistently?</p>
+                {[
+                  'Getting enough sleep',
+                  'Drinking enough water',
+                  'Eating fruits and vegetables',
+                  'Being physically active',
+                  'Limiting sugary drinks or ultra-processed foods',
+                  'Nothing in particular right now',
+                ].map((opt) => (
+                  <div key={opt} style={{ fontSize: '13px', marginBottom: '4px', color: charBlack }}>
+                    {opt}: {getAnswerCount('hardestHabit', opt)}
+                  </div>
+                ))}
+              </div>
+
+              <div>
+                <p style={{ fontWeight: 'bold', marginBottom: '8px', color: charBlack }}>What makes healthy habits difficult for you?</p>
+                {[
+                  "I don't have enough time",
+                  'Healthy foods or activities cost too much',
+                  "I don't have transportation",
+                  'I have too much homework or other responsibilities',
+                  "I don't have a safe place to be active",
+                  "I don't know where to find healthy resources",
+                  'Something else',
+                  'Nothing in particular right now',
+                ].map((opt) => (
+                  <div key={opt} style={{ fontSize: '13px', marginBottom: '4px', color: charBlack }}>
+                    {opt}: {getAnswerCount('difficulties', opt)}
+                  </div>
+                ))}
+              </div>
+
+              <div>
+                <p style={{ fontWeight: 'bold', marginBottom: '8px', color: charBlack }}>Which free community resources would you like to learn more about?</p>
+                {[
+                  'Free student meals',
+                  'Food pantries',
+                  'Recreation centers',
+                  'Parks, playgrounds, and trails',
+                  'Youth sports',
+                  'Homework help or tutoring',
+                  'Mentoring programs',
+                  'None right now',
+                ].map((opt) => (
+                  <div key={opt} style={{ fontSize: '13px', marginBottom: '4px', color: charBlack }}>
+                    {opt}: {getAnswerCount('resourcesOfInterest', opt)}
+                  </div>
+                ))}
+              </div>
+
+              <div>
+                <p style={{ fontWeight: 'bold', marginBottom: '8px', color: charBlack }}>How has practicing healthy habits affected you this month?</p>
+                {[
+                  'I have more energy',
+                  'I can focus better in class',
+                  'I’m sleeping better or more',
+                  'My mood has improved',
+                  'I feel stronger or more active',
+                  'I haven’t noticed a difference, yet',
+                ].map((opt) => (
+                  <div key={opt} style={{ fontSize: '13px', marginBottom: '4px', color: charBlack }}>
+                    {opt}: {getAnswerCount('effects', opt)}
+                  </div>
+                ))}
+              </div>
+
+              <div>
+                <p style={{ fontWeight: 'bold', marginBottom: '8px', color: charBlack }}>Would you like more healthy habit tips and local resources?</p>
+                {['Yes', 'Maybe later', 'No thanks'].map((opt) => (
+                  <div key={opt} style={{ fontSize: '13px', marginBottom: '4px', color: charBlack }}>
+                    {opt}: {getAnswerCount('wantsMoreTips', opt)}
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
       </div>
