@@ -76,6 +76,7 @@ interface SurveyResponse {
   effects: string[];
   wantsMoreTips: string;
   teacherChallenge?: string;
+  submittedDate?: string; // YYYY-MM-DD
 }
 
 export default function App() {
@@ -132,7 +133,8 @@ export default function App() {
     resourcesOfInterest: [],
     effects: [],
     wantsMoreTips: '',
-    teacherChallenge: ''
+    teacherChallenge: '',
+    submittedDate: ''
   });
   const [surveySuccessMsg, setSurveySuccessMsg] = useState('');
 
@@ -189,19 +191,12 @@ export default function App() {
   useEffect(() => {
     if (currentUser) {
       localStorage.setItem('healthy_habits_current_user', currentUser);
-      if (usersDb[currentUser]) {
-        setStudentSurvey(prev => ({
-          ...prev,
-          studentUsername: currentUser,
-          classroomCode: usersDb[currentUser].classroomCode || ''
-        }));
-      }
     } else {
       localStorage.removeItem('healthy_habits_current_user');
     }
-  }, [currentUser, usersDb]);
+  }, [currentUser]);
 
-  // Load existing entry values for today into logFormValues when switching to 'log' or when user changes
+  // Load existing entry values for today into logFormValues and success message state when switching to 'log' or when user changes
   useEffect(() => {
     if (currentUser && usersDb[currentUser]) {
       const todayISO = getTodayESTISO();
@@ -217,6 +212,7 @@ export default function App() {
           sugaryDrinks: existingEntry.sugaryDrinks ?? 0,
           mood: existingEntry.mood ?? 1,
         });
+        setLogSuccessMsg('Your data has been successfully submitted.');
       } else {
         setLogFormValues({
           sleep: 0,
@@ -228,9 +224,49 @@ export default function App() {
           sugaryDrinks: 0,
           mood: 1,
         });
+        setLogSuccessMsg('');
       }
     }
   }, [currentUser, currentPage]);
+
+  // Load existing survey responses for today when switching to 'survey' or when user changes
+  useEffect(() => {
+    if (currentUser && usersDb[currentUser]) {
+      const todayISO = getTodayESTISO();
+      const userCode = usersDb[currentUser].classroomCode || '';
+      const existingSurvey = surveyData.find(
+        (s) => s.studentUsername === currentUser && s.submittedDate === todayISO
+      );
+
+      if (existingSurvey) {
+        setStudentSurvey({
+          studentUsername: currentUser,
+          classroomCode: userCode,
+          hardestHabit: existingSurvey.hardestHabit || '',
+          difficulties: existingSurvey.difficulties || [],
+          resourcesOfInterest: existingSurvey.resourcesOfInterest || [],
+          effects: existingSurvey.effects || [],
+          wantsMoreTips: existingSurvey.wantsMoreTips || '',
+          teacherChallenge: existingSurvey.teacherChallenge || '',
+          submittedDate: todayISO
+        });
+        setSurveySuccessMsg('Your survey responses have been successfully submitted.');
+      } else {
+        setStudentSurvey({
+          studentUsername: currentUser,
+          classroomCode: userCode,
+          hardestHabit: '',
+          difficulties: [],
+          resourcesOfInterest: [],
+          effects: [],
+          wantsMoreTips: '',
+          teacherChallenge: '',
+          submittedDate: ''
+        });
+        setSurveySuccessMsg('');
+      }
+    }
+  }, [currentUser, currentPage, surveyData]);
 
   // Helper: Get EST ISO Date String (YYYY-MM-DD)
   const getTodayESTISO = (): string => {
@@ -315,7 +351,6 @@ export default function App() {
     return Lookup1[rowIdx]?.[colIdx] || 'N/A';
   };
 
-  // Dynamic Lookup 2 & 3 evaluation helpers
   const getLookup2Metric = (metricName: string, grade: string): number => {
     let rowIdx = 1;
     if (grade === '6th - 8th') rowIdx = 2;
@@ -338,7 +373,6 @@ export default function App() {
     return parseFloat(valStr.replace('%', '')) || 0;
   };
 
-  // Habit Configs Dynamically Generated from Lookup Tables for any Grade
   const getHabitsConfig = (grade: string): HabitConfig[] => {
     const isElementary = grade === 'K - 5th';
     return [
@@ -546,14 +580,16 @@ export default function App() {
 
   const handleSurveySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const todayISO = getTodayESTISO();
     const finalSurvey = {
       ...studentSurvey,
       studentUsername: currentUser || 'Anonymous',
-      classroomCode: getCurrentUserClassroomCode()
+      classroomCode: getCurrentUserClassroomCode(),
+      submittedDate: todayISO
     };
 
     try {
-      const docId = `survey_${currentUser || 'anon'}_${Date.now()}`;
+      const docId = `survey_${currentUser || 'anon'}_${todayISO}`;
       await setDoc(doc(db, 'surveys', docId), finalSurvey);
       setSurveySuccessMsg('Your survey responses have been successfully submitted.');
     } catch (err) {
@@ -594,6 +630,7 @@ export default function App() {
   const getClassroomWeeklyAverage = (key: HabitKey): number => {
     const code = getCurrentUserClassroomCode().trim().toLowerCase();
     if (code === 'n/a') return 0;
+    // Strictly filter for students only (excluding teachers)
     const classroomStudents = Object.values(usersDb).filter(
       (u) => u.role === 'Student' && (u.classroomCode || '').trim().toLowerCase() === code
     );
