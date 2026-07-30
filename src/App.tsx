@@ -1204,10 +1204,11 @@ export default function App() {
               <tbody>
                 {habitsConfig.map((h) => {
                   const avg = getClassroomWeeklyAverage(h.key);
+                  const displayGoal = h.goal === '10 minutes' ? '3 stars' : h.goal;
                   return (
                     <tr key={h.key}>
                       <td style={styles.logTableCell}>{h.icon} {h.label}</td>
-                      <td style={styles.logTableCell}>{h.goal}</td>
+                      <td style={styles.logTableCell}>{displayGoal}</td>
                       <td style={styles.logTableCell}>
                         {avg} <span style={{ marginLeft: '10px' }}>{renderStatusIcon(h.key, avg, currentGrade)}</span>
                       </td>
@@ -1236,10 +1237,11 @@ export default function App() {
               <tbody>
                 {habitsConfig.map((h) => {
                   const avg = getWeeklyAverage(h.key);
+                  const displayGoal = h.goal === '10 minutes' ? '3 stars' : h.goal;
                   return (
                     <tr key={h.key}>
                       <td style={styles.logTableCell}>{h.icon} {h.label}</td>
-                      <td style={styles.logTableCell}>{h.goal}</td>
+                      <td style={styles.logTableCell}>{displayGoal}</td>
                       <td style={styles.logTableCell}>
                         {avg} <span style={{ marginLeft: '10px' }}>{renderStatusIcon(h.key, avg, currentGrade)}</span>
                       </td>
@@ -1265,30 +1267,33 @@ export default function App() {
                   </tr>
                 </thead>
                 <tbody>
-                  {habitsConfig.map((h) => (
-                    <tr key={h.key}>
-                      <td style={styles.logTableCell}>{h.icon} {h.label}</td>
-                      <td style={styles.logTableCell}>
-                        <select
-                          value={logFormValues[h.key] ?? h.selections[0]}
-                          onChange={(e) =>
-                            setLogFormValues({
-                              ...logFormValues,
-                              [h.key]: Number(e.target.value)
-                            })
-                          }
-                          style={{ ...styles.inputBox, width: '130px', margin: 0 }}
-                        >
-                          {h.selections.map((val) => (
-                            <option key={val} value={val}>
-                              {h.selectionLabels && h.selectionLabels[val] ? h.selectionLabels[val] : val}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-                      <td style={styles.logTableCell}>{h.goal}</td>
-                    </tr>
-                  ))}
+                  {habitsConfig.map((h) => {
+                    const displayGoal = h.goal === '10 minutes' ? '3 stars' : h.goal;
+                    return (
+                      <tr key={h.key}>
+                        <td style={styles.logTableCell}>{h.icon} {h.label}</td>
+                        <td style={styles.logTableCell}>
+                          <select
+                            value={logFormValues[h.key] ?? h.selections[0]}
+                            onChange={(e) =>
+                              setLogFormValues({
+                                ...logFormValues,
+                                [h.key]: Number(e.target.value)
+                              })
+                            }
+                            style={{ ...styles.inputBox, width: '130px', margin: 0 }}
+                          >
+                            {h.selections.map((val) => (
+                              <option key={val} value={val}>
+                                {h.selectionLabels && h.selectionLabels[val] ? h.selectionLabels[val] : val}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td style={styles.logTableCell}>{displayGoal}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
               <button type="submit" style={{ ...styles.button, width: '200px', marginTop: '20px' }}>
@@ -1318,7 +1323,10 @@ export default function App() {
               </select>
               <span style={{ color: steelBlue, fontWeight: 'bold' }}>Goal: </span>
               <span style={{ color: charBlack }}>
-                {habitsConfig.find((h) => h.key === selectedCategory)?.goal}
+                {(() => {
+                  const goalVal = habitsConfig.find((h) => h.key === selectedCategory)?.goal;
+                  return goalVal === '10 minutes' ? '3 stars' : goalVal;
+                })()}
               </span>
             </div>
 
