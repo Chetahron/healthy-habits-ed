@@ -218,7 +218,6 @@ export default function App() {
           mood: existingEntry.mood ?? 3,
         });
       } else {
-        // Reset to lowest values if no entry for today
         setLogFormValues({
           sleep: 0,
           physicalActivity: 0,
@@ -829,6 +828,13 @@ export default function App() {
       fontFamily: manropeFont,
       fontSize: '15px',
       lineHeight: '1.5'
+    },
+    pageHeaderTitle: {
+      color: steelBlue,
+      fontFamily: manropeFont,
+      fontSize: '24px',
+      fontWeight: 'bold',
+      marginBottom: '15px'
     }
   };
 
@@ -1156,7 +1162,7 @@ export default function App() {
         {/* Classroom Scorecard View */}
         {currentPage === 'classroom' && (
           <div style={{ textAlign: 'left', maxWidth: '700px' }}>
-            <h2 style={{ color: steelBlue, fontFamily: manropeFont, fontSize: '24px', fontWeight: 'bold' }}>
+            <h2 style={styles.pageHeaderTitle}>
               My Classroom’s Scorecard (Weekly Average)
             </h2>
             <table style={styles.logTable}>
@@ -1188,7 +1194,7 @@ export default function App() {
         {/* Personal Scorecard View */}
         {currentPage === 'home' && (
           <div style={{ textAlign: 'left', maxWidth: '700px' }}>
-            <h2 style={{ color: steelBlue, fontFamily: manropeFont, fontSize: '24px', fontWeight: 'bold' }}>
+            <h2 style={styles.pageHeaderTitle}>
               My Scorecard (Weekly Average)
             </h2>
             <table style={styles.logTable}>
@@ -1220,7 +1226,7 @@ export default function App() {
         {/* Daily Data Log View */}
         {currentPage === 'log' && (
           <div style={{ textAlign: 'left', maxWidth: '700px' }}>
-            <h2 style={{ color: steelBlue, fontFamily: manropeFont, fontSize: '24px', fontWeight: 'bold' }}>My Daily Data Log</h2>
+            <h2 style={styles.pageHeaderTitle}>My Daily Data Log</h2>
             <form onSubmit={handleLogSubmit}>
               <table style={styles.logTable}>
                 <thead>
@@ -1268,7 +1274,7 @@ export default function App() {
         {/* Daily Data View (28-day grid) */}
         {currentPage === 'view' && (
           <div style={{ textAlign: 'left' }}>
-            <h2 style={{ color: steelBlue, fontFamily: manropeFont, fontSize: '24px', fontWeight: 'bold' }}>My Daily Data View (4-Week)</h2>
+            <h2 style={styles.pageHeaderTitle}>My Daily Data View (4-Week)</h2>
             <div style={{ marginBottom: '20px', fontSize: '16px', fontFamily: manropeFont }}>
               <span style={{ color: steelBlue, fontWeight: 'bold' }}>Habit: </span>
               <select
@@ -1316,7 +1322,7 @@ export default function App() {
         {/* Learning Center */}
         {currentPage === 'learning' && (
           <div style={{ textAlign: 'left', maxWidth: '800px' }}>
-            <h2 style={{ color: steelBlue, fontFamily: manropeFont, fontSize: '24px', fontWeight: 'bold', marginBottom: '15px' }}>
+            <h2 style={styles.pageHeaderTitle}>
               Learning Center
             </h2>
 
@@ -1427,7 +1433,7 @@ export default function App() {
         {/* Community Resources */}
         {currentPage === 'resources' && (
           <div style={{ textAlign: 'left', maxWidth: '700px' }}>
-            <h2 style={{ color: steelBlue, fontSize: '24px', marginBottom: '15px' }}>Community Resources in Indianapolis, IN</h2>
+            <h2 style={styles.pageHeaderTitle}>Community Resources in Indianapolis, IN</h2>
             
             <div style={{ fontWeight: 'bold', fontSize: '15px', color: charBlack, marginTop: '10px', marginBottom: '3px' }}>Free Groceries and Meals</div>
             <p style={styles.smallContentText}>
@@ -1478,7 +1484,7 @@ export default function App() {
         {/* Survey */}
         {currentPage === 'survey' && (
           <div style={{ textAlign: 'left', maxWidth: '700px' }}>
-            <h2 style={{ color: steelBlue, fontSize: '24px', marginBottom: '10px' }}>Survey</h2>
+            <h2 style={styles.pageHeaderTitle}>Survey</h2>
             <div style={{ fontWeight: 'bold', fontSize: '14px', color: charBlack, marginBottom: '4px' }}>Help Us Help You!</div>
             <p style={styles.smallContentText}>
               Your answers can help us understand what healthy habits are easiest and hardest for students. Your responses are voluntary and anonymous. Additionally, you can find additional information, programs, and community resources that support your health, learning, and success by selecting the Community Resources page in the left hand navigation bar.
@@ -1620,7 +1626,7 @@ export default function App() {
         {/* Survey Results (Teacher View) */}
         {currentPage === 'survey-results' && currentUserRole === 'Teacher' && (
           <div style={{ textAlign: 'left', maxWidth: '700px' }}>
-            <h2 style={{ color: steelBlue, fontSize: '24px', marginBottom: '10px' }}>Survey Results</h2>
+            <h2 style={styles.pageHeaderTitle}>Survey Results</h2>
             <div style={{ fontWeight: 'bold', fontSize: '14px', color: charBlack, marginBottom: '4px' }}>Information To Help Your Students!</div>
             <p style={styles.smallContentText}>
               Your students’ survey answers can help you understand what healthy habits are easiest and hardest for them to follow. The data below shows the total number of students in your classroom that indicated each answer to the survey questions. It can be used to provide additional information, programs, and community resources that support student health, learning, and success.
