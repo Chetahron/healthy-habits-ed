@@ -354,6 +354,34 @@ export default function App() {
   };
 
   const getHabitColor = (key: HabitKey, val: number, grade: string): 'red' | 'yellow' | 'green' => {
+    if (grade === '9th - 12th') {
+      if (key === 'water') {
+        if (val >= 10) return 'green';
+        if (val >= 8) return 'yellow';
+        return 'red';
+      }
+      if (key === 'sleep') {
+        if (val >= 9) return 'green';
+        if (val >= 8) return 'yellow';
+        return 'red';
+      }
+      if (key === 'fruitsVeg') {
+        if (val >= 5) return 'green';
+        if (val >= 3) return 'yellow';
+        return 'red';
+      }
+      if (key === 'physicalActivity') {
+        if (val >= 60) return 'green';
+        if (val >= 30) return 'yellow';
+        return 'red';
+      }
+      if (key === 'sugaryDrinks') {
+        if (val === 0) return 'green';
+        if (val === 1) return 'yellow';
+        return 'red';
+      }
+    }
+
     if (key === 'water') {
       const target = getLookup2Metric('Water Target', grade);
       const min = getLookup2Metric('Water Min', grade);
