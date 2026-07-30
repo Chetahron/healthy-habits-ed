@@ -7,9 +7,9 @@ import sidebarLogo from './assets/new-sidebar-logo.png';
 // --- BACKGROUND LOOKUP TABLES (Lookup 1, Lookup 2, Lookup 3) ---
 const Lookup1: string[][] = [
   ["Grade", "Sleep", "Physical Activity", "Water", "Fruits & Veg", "Whole Foods", "UPF", "Sugary Drinks", "Screen Time", "Outdoor Time", "Mindfulness", "Reading"],
-  ["K - 5th", "9 - 12 hours / night", "60+ minutes / day", "6 - 9 cups / day", ">= 5 servings / day", ">= 80% / day", "<= 20% / day", "0 drinks / day", "<= 2 hrs", ">= 60 mins", "10 mins", "20 mins"],
-  ["6th - 8th", "8 - 10 hours / night", "60+ minutes / day", "8 - 11 cups / day", ">= 5 servings / day", ">= 80% / day", "<= 20% / day", "0 - 1 drinks / day", "<= 2 hrs", ">= 60 mins", "10 mins", "20 mins"],
-  ["9th - 12th", "8 - 10 hours / night", "60+ minutes / day", "9 - 13 cups / day", ">= 5 servings / day", ">= 80% / day", "<= 20% / day", "0 - 1 drinks / day", "<= 2 hrs", ">= 60 mins", "10 mins", "20 mins"],
+  ["K - 5th", "9 - 12 hours / night", "60+ minutes / day", "6 - 9 cups / day", ">= 5 servings / day", ">= 80% / day", "<= 20% / day", "0 drinks / day", "<= 2 hrs", ">= 60 mins", "3 stars", "20 mins"],
+  ["6th - 8th", "8 - 10 hours / night", "60+ minutes / day", "8 - 11 cups / day", ">= 5 servings / day", ">= 80% / day", "<= 20% / day", "0 - 1 drinks / day", "<= 2 hrs", ">= 60 mins", "3 stars", "20 mins"],
+  ["9th - 12th", "8 - 10 hours / night", "60+ minutes / day", "9 - 13 cups / day", ">= 5 servings / day", ">= 80% / day", "<= 20% / day", "0 - 1 drinks / day", "<= 2 hrs", ">= 60 mins", "3 stars", "20 mins"],
   ["Teacher", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A"]
 ];
 
@@ -331,7 +331,12 @@ export default function App() {
     if (grade === 'K - 5th') rowIdx = 1;
     else if (grade === '6th - 8th') rowIdx = 2;
 
-    return Lookup1[rowIdx]?.[colIdx] || 'N/A';
+    const rawGoal = Lookup1[rowIdx]?.[colIdx] || 'N/A';
+    // Edit A: Replace "10 minutes" with "3 stars" for mood/mindfulness goal
+    if (rawGoal === '10 minutes') {
+      return '3 stars';
+    }
+    return rawGoal;
   };
 
   const getHabitsConfig = (grade: string): HabitConfig[] => {
