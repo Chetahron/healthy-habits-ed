@@ -201,6 +201,38 @@ export default function App() {
     }
   }, [currentUser, usersDb]);
 
+  // Load existing entry values for today into logFormValues when switching to 'log' or when user changes
+  useEffect(() => {
+    if (currentUser && usersDb[currentUser]) {
+      const todayISO = getTodayESTISO();
+      const existingEntry = usersDb[currentUser].entries?.[todayISO];
+      if (existingEntry) {
+        setLogFormValues({
+          sleep: existingEntry.sleep ?? 8,
+          physicalActivity: existingEntry.physicalActivity ?? 60,
+          water: existingEntry.water ?? 8,
+          fruitsVeg: existingEntry.fruitsVeg ?? 5,
+          wholeFoods: existingEntry.wholeFoods ?? 80,
+          upf: existingEntry.upf ?? 20,
+          sugaryDrinks: existingEntry.sugaryDrinks ?? 0,
+          mood: existingEntry.mood ?? 3,
+        });
+      } else {
+        // Reset to lowest values if no entry for today
+        setLogFormValues({
+          sleep: 0,
+          physicalActivity: 0,
+          water: 0,
+          fruitsVeg: 0,
+          wholeFoods: 0,
+          upf: 0,
+          sugaryDrinks: 0,
+          mood: 1,
+        });
+      }
+    }
+  }, [currentUser, currentPage]);
+
   // Helper: Get EST ISO Date String (YYYY-MM-DD)
   const getTodayESTISO = (): string => {
     const now = new Date();
@@ -354,6 +386,7 @@ export default function App() {
     if (key === 'sugaryDrinks') {
       const target = getLookup3Metric('Sugar Target', grade);
       if (val <= target) return 'green';
+      if (val === 1) return 'yellow';
       return 'red';
     }
     return val >= 8 ? 'green' : val === 7 ? 'yellow' : 'red';
@@ -679,7 +712,7 @@ export default function App() {
     },
     sidebarLogoBox: {
       width: '100%',
-      maxWidth: '220px',
+      maxWidth: '440px',
       backgroundColor: 'transparent',
       padding: '6px',
       display: 'flex',
@@ -691,7 +724,7 @@ export default function App() {
     sidebarLogoImage: {
       width: '100%',
       height: 'auto',
-      maxHeight: '80px',
+      maxHeight: '160px',
       objectFit: 'contain',
       display: 'block'
     },
@@ -710,7 +743,10 @@ export default function App() {
       borderRadius: '8px',
       boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
       boxSizing: 'border-box',
-      transition: 'all 0.2s ease-in-out'
+      transition: 'all 0.2s ease-in-out',
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center'
     },
     activeNavButton: {
       backgroundColor: '#EAE5D9',
@@ -774,19 +810,25 @@ export default function App() {
       fontFamily: manropeFont
     },
     smallContentHeader: {
-      fontSize: '16px',
+      fontSize: '15px',
       fontWeight: 'bold',
-      margin: '12px 0 4px 0',
+      margin: '10px 0 3px 0',
       color: '#202124'
     },
     smallContentText: {
-      fontSize: '14px',
-      margin: '0 0 10px 0',
-      lineHeight: '1.6',
+      fontSize: '13px',
+      margin: '0 0 8px 0',
+      lineHeight: '1.5',
       color: '#202124'
     },
     halfHeightSpace: {
-      height: '10px'
+      height: '5px'
+    },
+    metaInfoLine: {
+      color: charBlack,
+      fontFamily: manropeFont,
+      fontSize: '15px',
+      lineHeight: '1.5'
     }
   };
 
@@ -1007,7 +1049,7 @@ export default function App() {
           }}
           onClick={() => setCurrentPage('classroom')}
         >
-          My Classroom Scorecard
+          <span>My Classroom Scorecard</span> 🏫
         </button>
         <button
           style={{
@@ -1016,7 +1058,7 @@ export default function App() {
           }}
           onClick={() => setCurrentPage('home')}
         >
-          My Scorecard
+          <span>My Scorecard</span> 👤
         </button>
         <button
           style={{
@@ -1025,7 +1067,7 @@ export default function App() {
           }}
           onClick={() => setCurrentPage('log')}
         >
-          My Daily Data Log
+          <span>My Daily Data Log</span> 👤
         </button>
         <button
           style={{
@@ -1034,7 +1076,7 @@ export default function App() {
           }}
           onClick={() => setCurrentPage('view')}
         >
-          My Daily Data View
+          <span>My Daily Data View</span> 👤
         </button>
         <button
           style={{
@@ -1043,7 +1085,7 @@ export default function App() {
           }}
           onClick={() => setCurrentPage('learning')}
         >
-          Learning Center
+          <span>Learning Center</span> 📚
         </button>
         <button
           style={{
@@ -1052,7 +1094,7 @@ export default function App() {
           }}
           onClick={() => setCurrentPage('resources')}
         >
-          Community Resources
+          <span>Community Resources</span> 📚
         </button>
         <button
           style={{
@@ -1061,7 +1103,7 @@ export default function App() {
           }}
           onClick={() => setCurrentPage('survey')}
         >
-          Survey
+          <span>Survey</span> 📚
         </button>
         {currentUserRole === 'Teacher' && (
           <button
@@ -1071,7 +1113,7 @@ export default function App() {
             }}
             onClick={() => setCurrentPage('survey-results')}
           >
-            Survey Results
+            <span>Survey Results</span> 📚
           </button>
         )}
         <button
@@ -1079,7 +1121,8 @@ export default function App() {
             ...styles.navButton,
             marginTop: 'auto',
             backgroundColor: '#d9534f',
-            color: '#ffffff'
+            color: '#ffffff',
+            justifyContent: 'center'
           }}
           onClick={() => {
             setCurrentUser(null);
@@ -1096,17 +1139,17 @@ export default function App() {
         {/* Header section */}
         <div style={{ textAlign: 'left', marginBottom: '25px' }}>
           <img src={logo} alt="HealthyHabitsED Logo" style={styles.headerLogoImage} />
-          <div style={{ color: charBlack, fontFamily: manropeFont, fontSize: '16px', lineHeight: '1.5' }}>
-            My Status: {currentUserRole}
+          <div style={styles.metaInfoLine}>
+            <strong>My Status:</strong> {currentUserRole}
           </div>
-          <div style={{ color: charBlack, fontFamily: manropeFont, fontSize: '16px', lineHeight: '1.5' }}>
-            My Classroom: {currentUserClassroom}
+          <div style={styles.metaInfoLine}>
+            <strong>My Classroom:</strong> {currentUserClassroom}
           </div>
-          <div style={{ color: charBlack, fontFamily: manropeFont, fontSize: '16px', lineHeight: '1.5' }}>
-            My Grade: {currentGrade}
+          <div style={styles.metaInfoLine}>
+            <strong>My Grade:</strong> {currentGrade}
           </div>
-          <div style={{ color: charBlack, fontFamily: manropeFont, fontSize: '16px', lineHeight: '1.5' }}>
-            Today's Date: {getTodayESTFormatted()}
+          <div style={styles.metaInfoLine}>
+            <strong>Today's Date:</strong> {getTodayESTFormatted()}
           </div>
         </div>
 
@@ -1277,7 +1320,7 @@ export default function App() {
               Learning Center
             </h2>
 
-            <div style={{ color: steelBlue, fontWeight: 'bold', fontSize: '18px', marginTop: '15px', marginBottom: '6px' }}>Sleep</div>
+            <div style={{ color: steelBlue, fontWeight: 'bold', fontSize: '16px', marginTop: '15px', marginBottom: '4px' }}>Sleep</div>
             <p style={styles.smallContentText}>
               Sleep is when your brain and body recharge so you can learn, grow, and feel your best. Getting the right amount of sleep every night helps you succeed in school, sports, and everyday life. (Grade Target: {getGoalFromLookup1('sleep')})
             </p>
@@ -1290,7 +1333,7 @@ export default function App() {
 
             <div style={styles.halfHeightSpace} />
 
-            <div style={{ color: steelBlue, fontWeight: 'bold', fontSize: '18px', marginTop: '15px', marginBottom: '6px' }}>Physical Activity</div>
+            <div style={{ color: steelBlue, fontWeight: 'bold', fontSize: '16px', marginTop: '15px', marginBottom: '4px' }}>Physical Activity</div>
             <p style={styles.smallContentText}>
               Physical activity is any movement that gets your body working, from playing outside to sports, dancing, biking, or walking. Aim for about 60 minutes of activity each day. (Grade Target: {getGoalFromLookup1('physicalActivity')})
             </p>
@@ -1303,7 +1346,7 @@ export default function App() {
 
             <div style={styles.halfHeightSpace} />
 
-            <div style={{ color: steelBlue, fontWeight: 'bold', fontSize: '18px', marginTop: '15px', marginBottom: '6px' }}>Water</div>
+            <div style={{ color: steelBlue, fontWeight: 'bold', fontSize: '16px', marginTop: '15px', marginBottom: '4px' }}>Water</div>
             <p style={styles.smallContentText}>
               Water is the best drink for your body because every organ depends on it to work properly. Staying hydrated helps you feel energized and ready to learn. (Grade Target: {getGoalFromLookup1('water')})
             </p>
@@ -1316,7 +1359,7 @@ export default function App() {
 
             <div style={styles.halfHeightSpace} />
 
-            <div style={{ color: steelBlue, fontWeight: 'bold', fontSize: '18px', marginTop: '15px', marginBottom: '6px' }}>Fruits & Vegetables</div>
+            <div style={{ color: steelBlue, fontWeight: 'bold', fontSize: '16px', marginTop: '15px', marginBottom: '4px' }}>Fruits & Vegetables</div>
             <p style={styles.smallContentText}>
               Fruits and vegetables are packed with vitamins, minerals, fiber, and antioxidants that help your body stay healthy. Eating a colorful variety gives your body many important nutrients. (Grade Target: {getGoalFromLookup1('fruitsVeg')})
             </p>
@@ -1329,7 +1372,7 @@ export default function App() {
 
             <div style={styles.halfHeightSpace} />
 
-            <div style={{ color: steelBlue, fontWeight: 'bold', fontSize: '18px', marginTop: '15px', marginBottom: '6px' }}>Whole Foods</div>
+            <div style={{ color: steelBlue, fontWeight: 'bold', fontSize: '16px', marginTop: '15px', marginBottom: '4px' }}>Whole Foods</div>
             <p style={styles.smallContentText}>
               Whole foods are foods that are close to their natural form with little processing, like apples, oatmeal, eggs, beans, yogurt, nuts, and fresh vegetables. They provide the nutrients your body needs to grow and stay healthy. (Grade Target: {getGoalFromLookup1('wholeFoods')})
             </p>
@@ -1342,7 +1385,7 @@ export default function App() {
 
             <div style={styles.halfHeightSpace} />
 
-            <div style={{ color: steelBlue, fontWeight: 'bold', fontSize: '18px', marginTop: '15px', marginBottom: '6px' }}>Ultra-Processed Foods</div>
+            <div style={{ color: steelBlue, fontWeight: 'bold', fontSize: '16px', marginTop: '15px', marginBottom: '4px' }}>Ultra-Processed Foods</div>
             <p style={styles.smallContentText}>
               Ultra-processed foods are made with many added ingredients and often contain extra sugar, salt, unhealthy fats, or artificial flavors. Examples include many chips, candy, soda, and packaged desserts. (Grade Target: {getGoalFromLookup1('upf')})
             </p>
@@ -1355,7 +1398,7 @@ export default function App() {
 
             <div style={styles.halfHeightSpace} />
 
-            <div style={{ color: steelBlue, fontWeight: 'bold', fontSize: '18px', marginTop: '15px', marginBottom: '6px' }}>Sugary Drinks</div>
+            <div style={{ color: steelBlue, fontWeight: 'bold', fontSize: '16px', marginTop: '15px', marginBottom: '4px' }}>Sugary Drinks</div>
             <p style={styles.smallContentText}>
               Sugary drinks include soda, many sports drinks, sweet teas, fruit drinks with added sugar, and energy drinks. They often contain lots of sugar but very few nutrients. (Grade Target: {getGoalFromLookup1('sugaryDrinks')})
             </p>
@@ -1368,7 +1411,7 @@ export default function App() {
 
             <div style={styles.halfHeightSpace} />
 
-            <div style={{ color: steelBlue, fontWeight: 'bold', fontSize: '18px', marginTop: '15px', marginBottom: '6px' }}>Mood</div>
+            <div style={{ color: steelBlue, fontWeight: 'bold', fontSize: '16px', marginTop: '15px', marginBottom: '4px' }}>Mood</div>
             <p style={styles.smallContentText}>
               Your mood is how you feel emotionally throughout the day. Everyone has good days and bad days, and healthy habits can help support a more positive mood over time. (Grade Target: {getGoalFromLookup1('mood')})
             </p>
@@ -1386,49 +1429,49 @@ export default function App() {
           <div style={{ textAlign: 'left', maxWidth: '700px' }}>
             <h2 style={{ color: steelBlue, fontSize: '24px', marginBottom: '15px' }}>Community Resources in Indianapolis, IN</h2>
             
-            <div style={{ fontWeight: 'bold', fontSize: '16px', color: charBlack, marginTop: '15px', marginBottom: '5px' }}>Free Groceries and Meals</div>
+            <div style={{ fontWeight: 'bold', fontSize: '15px', color: charBlack, marginTop: '10px', marginBottom: '3px' }}>Free Groceries and Meals</div>
             <p style={styles.smallContentText}>
               Find services where you can search for free groceries and meals if you or your family need extra help. Food pantries, specifically, help make sure everyone has access to healthy food, no matter their financial situation.
             </p>
-            <a href="https://www.communitycompass.org" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>Community Compass</a>
-            <a href="https://www.indianapolis-food-pantries.org" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>Indianapolis Food Pantries</a>
+            <a href="https://www.communitycompass.app/home" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>Community Compass</a>
+            <a href="https://www.foodpantries.org/ci/in-indianapolis" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>Indianapolis Food Pantries</a>
 
-            <div style={{ fontWeight: 'bold', fontSize: '16px', color: charBlack, marginTop: '20px', marginBottom: '5px' }}>Free Student Meal Services</div>
+            <div style={{ fontWeight: 'bold', fontSize: '15px', color: charBlack, marginTop: '15px', marginBottom: '3px' }}>Free Student Meal Services</div>
             <p style={styles.smallContentText}>
               Find free student meal programs that provide nutritious breakfast, lunch, and snack options, helping you stay healthy, energized, and ready to learn during the school year and summer.
             </p>
-            <a href="https://www.myips.org" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>Indianapolis Public Schools</a>
-            <a href="https://www.indy.gov/agency/indy-parks-and-recreation" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>Indy Parks & Recreation</a>
+            <a href="https://www.myips.org/student-family-references/foodservice" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>Indianapolis Public Schools</a>
+            <a href="https://parks.indy.gov/programs/free-meals-programs/?utm_source=chatgpt.com" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>Indy Parks & Recreation</a>
 
-            <div style={{ fontWeight: 'bold', fontSize: '16px', color: charBlack, marginTop: '20px', marginBottom: '5px' }}>Youth Activities - Parks, Playgrounds, Walking Trails & Sports</div>
+            <div style={{ fontWeight: 'bold', fontSize: '15px', color: charBlack, marginTop: '15px', marginBottom: '3px' }}>Youth Activities - Parks, Playgrounds, Walking Trails & Sports</div>
             <p style={styles.smallContentText}>
               Find parks, playgrounds, trails, and youth sports programs that provide fun and safe places for you to be active, build strength and confidence, enjoy nature, learn teamwork, and improve your physical and mental health.
             </p>
-            <a href="https://www.indy.gov/agency/indy-parks-and-recreation" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>Indy Parks & Recreation</a>
-            <a href="https://www.indy.gov/activity/trails" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>indy.gov trails</a>
-            <a href="https://www.indysportspark.com" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>Youth sports</a>
+            <a href="https://parks.indy.gov/" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>Indy Parks & Recreation</a>
+            <a href="https://www.indy.gov/activity/find-a-trail" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>indy.gov trails</a>
+            <a href="https://anc.apm.activecommunities.com/indyparks/activity/search?onlineSiteId=0&activity_select_param=2&activity_department_ids=4&viewMode=list" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>Youth sports</a>
 
-            <div style={{ fontWeight: 'bold', fontSize: '16px', color: charBlack, marginTop: '20px', marginBottom: '5px' }}>Community Recreation Centers</div>
+            <div style={{ fontWeight: 'bold', fontSize: '15px', color: charBlack, marginTop: '15px', marginBottom: '3px' }}>Community Recreation Centers</div>
             <p style={styles.smallContentText}>
               Find a Community Center near you to stay active, learn new skills, and spend time with others. Many offer free or low-cost programs that help kids and families stay healthy, active, and connected.
             </p>
-            <a href="https://www.indy.gov" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>Map of Indianapolis Community Centers</a>
+            <a href="https://parks.indy.gov/programs/free-meals-programs/?utm_source=chatgpt.com" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>Map of Indianapolis Community Centers</a>
 
-            <div style={{ fontWeight: 'bold', fontSize: '16px', color: charBlack, marginTop: '20px', marginBottom: '5px' }}>Homework Help</div>
+            <div style={{ fontWeight: 'bold', fontSize: '15px', color: charBlack, marginTop: '15px', marginBottom: '3px' }}>Homework Help</div>
             <p style={styles.smallContentText}>
               Find programs that offer you free or low-cost support from teachers, tutors, or volunteers to better understand schoolwork, complete assignments, and build confidence in learning.
             </p>
-            <a href="https://www.indypl.org" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>Indianapolis Public Library</a>
+            <a href="https://www.indypl.org/services/homework-help" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>Indianapolis Public Library</a>
 
-            <div style={{ fontWeight: 'bold', fontSize: '16px', color: charBlack, marginTop: '20px', marginBottom: '5px' }}>Mentoring</div>
+            <div style={{ fontWeight: 'bold', fontSize: '15px', color: charBlack, marginTop: '15px', marginBottom: '3px' }}>Mentoring</div>
             <p style={styles.smallContentText}>
               Find a trusted adult who encourages, supports, and guides you by helping you build confidence, develop new skills, set goals, and succeed in school and life.
             </p>
-            <a href="https://www.bementoring.org" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>Big Brothers Big Sisters of Central Indiana</a>
-            <a href="https://www.indygroups.org" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>Boys and Girls Club of Indianapolis</a>
-            <a href="https://www.dreamaliveinc.org" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>Dream Alive</a>
-            <a href="https://www.elevateindy.org" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>Elevate Indianapolis</a>
-            <a href="https://www.starfishinitiative.org" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>Starfish Initiative</a>
+            <a href="https://www.bebigforkids.org/" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>Big Brothers Big Sisters of Central Indiana</a>
+            <a href="https://www.bgcindy.org/" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>Boys and Girls Club of Indianapolis</a>
+            <a href="https://dreamaliveinc.org/" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>Dream Alive</a>
+            <a href="https://www.elevateindy.org/holistic-mentoring" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>Elevate Indianapolis</a>
+            <a href="https://www.starfishinitiative.org/?utm_source=chatgpt.com" target="_blank" rel="noreferrer" style={styles.resourceIndentLink}>Starfish Initiative</a>
           </div>
         )}
 
@@ -1436,11 +1479,11 @@ export default function App() {
         {currentPage === 'survey' && (
           <div style={{ textAlign: 'left', maxWidth: '700px' }}>
             <h2 style={{ color: steelBlue, fontSize: '24px', marginBottom: '10px' }}>Survey</h2>
-            <div style={{ fontWeight: 'bold', fontSize: '15px', color: charBlack, marginBottom: '6px' }}>Help Us Help You!</div>
+            <div style={{ fontWeight: 'bold', fontSize: '14px', color: charBlack, marginBottom: '4px' }}>Help Us Help You!</div>
             <p style={styles.smallContentText}>
               Your answers can help us understand what healthy habits are easiest and hardest for students. Your responses are voluntary and anonymous. Additionally, you can find additional information, programs, and community resources that support your health, learning, and success by selecting the Community Resources page in the left hand navigation bar.
             </p>
-            <div style={{ height: '10px' }} />
+            <div style={{ height: '5px' }} />
 
             {surveySuccessMsg && <div style={{ color: 'green', fontWeight: 'bold', marginBottom: '10px' }}>{surveySuccessMsg}</div>}
 
@@ -1498,7 +1541,7 @@ export default function App() {
                       'Something else',
                       'Nothing in particular right now',
                     ].map((opt) => (
-                      <label key={opt} style={{ display: 'block', fontSize: '14px', marginBottom: '4px', cursor: 'pointer', color: charBlack }}>
+                      <label key={opt} style={{ display: 'block', fontSize: '13px', marginBottom: '4px', cursor: 'pointer', color: charBlack }}>
                         <input
                           type="checkbox"
                           checked={studentSurvey.difficulties.includes(opt)}
@@ -1521,7 +1564,7 @@ export default function App() {
                       'Mentoring programs',
                       'None right now',
                     ].map((opt) => (
-                      <label key={opt} style={{ display: 'block', fontSize: '14px', marginBottom: '4px', cursor: 'pointer', color: charBlack }}>
+                      <label key={opt} style={{ display: 'block', fontSize: '13px', marginBottom: '4px', cursor: 'pointer', color: charBlack }}>
                         <input
                           type="checkbox"
                           checked={studentSurvey.resourcesOfInterest.includes(opt)}
@@ -1542,7 +1585,7 @@ export default function App() {
                       'I feel stronger or more active',
                       'I haven’t noticed a difference, yet',
                     ].map((opt) => (
-                      <label key={opt} style={{ display: 'block', fontSize: '14px', marginBottom: '4px', cursor: 'pointer', color: charBlack }}>
+                      <label key={opt} style={{ display: 'block', fontSize: '13px', marginBottom: '4px', cursor: 'pointer', color: charBlack }}>
                         <input
                           type="checkbox"
                           checked={studentSurvey.effects.includes(opt)}
@@ -1577,35 +1620,89 @@ export default function App() {
         {/* Survey Results (Teacher View) */}
         {currentPage === 'survey-results' && currentUserRole === 'Teacher' && (
           <div style={{ textAlign: 'left', maxWidth: '700px' }}>
-            <h2 style={{ color: steelBlue, fontSize: '24px', marginBottom: '15px' }}>Classroom Survey Results</h2>
-            <p style={{ color: '#555', marginBottom: '20px' }}>Aggregated feedback submitted by students in classroom: <strong>{currentUserClassroom}</strong></p>
+            <h2 style={{ color: steelBlue, fontSize: '24px', marginBottom: '10px' }}>Survey Results</h2>
+            <div style={{ fontWeight: 'bold', fontSize: '14px', color: charBlack, marginBottom: '4px' }}>Information To Help Your Students!</div>
+            <p style={styles.smallContentText}>
+              Your students’ survey answers can help you understand what healthy habits are easiest and hardest for them to follow. The data below shows the total number of students in your classroom that indicated each answer to the survey questions. It can be used to provide additional information, programs, and community resources that support student health, learning, and success.
+            </p>
+            <div style={{ height: '5px' }} />
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div style={{ backgroundColor: '#FFF', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                <h4 style={{ margin: '0 0 10px 0', color: steelBlue }}>Top Hardest Habits:</h4>
-                <ul style={{ paddingLeft: '20px', margin: 0, lineHeight: '1.8' }}>
-                  <li>Getting enough sleep: <strong>{getAnswerCount('hardestHabit', 'Getting enough sleep')} responses</strong></li>
-                  <li>Drinking enough water: <strong>{getAnswerCount('hardestHabit', 'Drinking enough water')} responses</strong></li>
-                  <li>Being physically active: <strong>{getAnswerCount('hardestHabit', 'Being physically active')} responses</strong></li>
-                </ul>
+            <div style={{ backgroundColor: '#FFF', padding: '25px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div>
+                <p style={{ fontWeight: 'bold', marginBottom: '8px', color: charBlack }}>Which healthy habit is the hardest for you to practice consistently?</p>
+                {[
+                  'Getting enough sleep',
+                  'Drinking enough water',
+                  'Eating fruits and vegetables',
+                  'Being physically active',
+                  'Limiting sugary drinks or ultra-processed foods',
+                  'Nothing in particular right now',
+                ].map((opt) => (
+                  <div key={opt} style={{ fontSize: '13px', marginBottom: '4px', color: charBlack }}>
+                    {opt}: {getAnswerCount('hardestHabit', opt)}
+                  </div>
+                ))}
               </div>
 
-              <div style={{ backgroundColor: '#FFF', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                <h4 style={{ margin: '0 0 10px 0', color: steelBlue }}>Common Obstacles Identified:</h4>
-                <ul style={{ paddingLeft: '20px', margin: 0, lineHeight: '1.8' }}>
-                  <li>Not enough time: <strong>{getAnswerCount('difficulties', "I don't have enough time")} responses</strong></li>
-                  <li>Too much homework / responsibilities: <strong>{getAnswerCount('difficulties', 'I have too much homework or other responsibilities')} responses</strong></li>
-                  <li>No safe place to be active: <strong>{getAnswerCount('difficulties', "I don't have a safe place to be active")} responses</strong></li>
-                </ul>
+              <div>
+                <p style={{ fontWeight: 'bold', marginBottom: '8px', color: charBlack }}>What makes healthy habits difficult for you?</p>
+                {[
+                  "I don't have enough time",
+                  'Healthy foods or activities cost too much',
+                  "I don't have transportation",
+                  'I have too much homework or other responsibilities',
+                  "I don't have a safe place to be active",
+                  "I don't know where to find healthy resources",
+                  'Something else',
+                  'Nothing in particular right now',
+                ].map((opt) => (
+                  <div key={opt} style={{ fontSize: '13px', marginBottom: '4px', color: charBlack }}>
+                    {opt}: {getAnswerCount('difficulties', opt)}
+                  </div>
+                ))}
               </div>
 
-              <div style={{ backgroundColor: '#FFF', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                <h4 style={{ margin: '0 0 10px 0', color: steelBlue }}>Requested Resources:</h4>
-                <ul style={{ paddingLeft: '20px', margin: 0, lineHeight: '1.8' }}>
-                  <li>Free student meals: <strong>{getAnswerCount('resourcesOfInterest', 'Free student meals')} responses</strong></li>
-                  <li>Parks & trails: <strong>{getAnswerCount('resourcesOfInterest', 'Parks, playgrounds, and trails')} responses</strong></li>
-                  <li>Homework help / Tutoring: <strong>{getAnswerCount('resourcesOfInterest', 'Homework help or tutoring')} responses</strong></li>
-                </ul>
+              <div>
+                <p style={{ fontWeight: 'bold', marginBottom: '8px', color: charBlack }}>Which free community resources would you like to learn more about?</p>
+                {[
+                  'Free student meals',
+                  'Food pantries',
+                  'Recreation centers',
+                  'Parks, playgrounds, and trails',
+                  'Youth sports',
+                  'Homework help or tutoring',
+                  'Mentoring programs',
+                  'None right now',
+                ].map((opt) => (
+                  <div key={opt} style={{ fontSize: '13px', marginBottom: '4px', color: charBlack }}>
+                    {opt}: {getAnswerCount('resourcesOfInterest', opt)}
+                  </div>
+                ))}
+              </div>
+
+              <div>
+                <p style={{ fontWeight: 'bold', marginBottom: '8px', color: charBlack }}>How has practicing healthy habits affected you this month?</p>
+                {[
+                  'I have more energy',
+                  'I can focus better in class',
+                  'I’m sleeping better or more',
+                  'My mood has improved',
+                  'I feel stronger or more active',
+                  'I haven’t noticed a difference, yet',
+                ].map((opt) => (
+                  <div key={opt} style={{ fontSize: '13px', marginBottom: '4px', color: charBlack }}>
+                    {opt}: {getAnswerCount('effects', opt)}
+                  </div>
+                ))}
+              </div>
+
+              <div>
+                <p style={{ fontWeight: 'bold', marginBottom: '8px', color: charBlack }}>Would you like more healthy habit tips and local resources?</p>
+                {['Yes', 'Maybe later', 'No thanks'].map((opt) => (
+                  <div key={opt} style={{ fontSize: '13px', marginBottom: '4px', color: charBlack }}>
+                    {opt}: {getAnswerCount('wantsMoreTips', opt)}
+                  </div>
+                ))}
               </div>
             </div>
           </div>
