@@ -109,14 +109,14 @@ export default function App() {
 
   // Log Data Inputs State
   const [logFormValues, setLogFormValues] = useState<Record<HabitKey, number>>({
-    sleep: 8,
-    physicalActivity: 60,
-    water: 8,
-    fruitsVeg: 5,
-    wholeFoods: 80,
-    upf: 20,
+    sleep: 0,
+    physicalActivity: 0,
+    water: 0,
+    fruitsVeg: 0,
+    wholeFoods: 0,
+    upf: 0,
     sugaryDrinks: 0,
-    mood: 3,
+    mood: 1,
   });
   const [logSuccessMsg, setLogSuccessMsg] = useState('');
 
@@ -208,14 +208,14 @@ export default function App() {
       const existingEntry = usersDb[currentUser].entries?.[todayISO];
       if (existingEntry) {
         setLogFormValues({
-          sleep: existingEntry.sleep ?? 8,
-          physicalActivity: existingEntry.physicalActivity ?? 60,
-          water: existingEntry.water ?? 8,
-          fruitsVeg: existingEntry.fruitsVeg ?? 5,
-          wholeFoods: existingEntry.wholeFoods ?? 80,
-          upf: existingEntry.upf ?? 20,
+          sleep: existingEntry.sleep ?? 0,
+          physicalActivity: existingEntry.physicalActivity ?? 0,
+          water: existingEntry.water ?? 0,
+          fruitsVeg: existingEntry.fruitsVeg ?? 0,
+          wholeFoods: existingEntry.wholeFoods ?? 0,
+          upf: existingEntry.upf ?? 0,
           sugaryDrinks: existingEntry.sugaryDrinks ?? 0,
-          mood: existingEntry.mood ?? 3,
+          mood: existingEntry.mood ?? 1,
         });
       } else {
         setLogFormValues({
@@ -503,8 +503,7 @@ export default function App() {
       [currentUser]: { ...user, entries: newEntries }
     };
     saveDb(updatedDb);
-    setLogSuccessMsg('Data logged and synced to cloud successfully!');
-    setTimeout(() => setLogSuccessMsg(''), 3000);
+    setLogSuccessMsg('Your data has been successfully submitted.');
   };
 
   const handleCheckboxChange = (field: keyof SurveyResponse, value: string) => {
@@ -528,8 +527,7 @@ export default function App() {
     try {
       const docId = `survey_${currentUser || 'anon'}_${Date.now()}`;
       await setDoc(doc(db, 'surveys', docId), finalSurvey);
-      setSurveySuccessMsg('Thank you! Your survey responses have been submitted to Cloud Firestore.');
-      setTimeout(() => setSurveySuccessMsg(''), 4000);
+      setSurveySuccessMsg('Your survey responses have been successfully submitted.');
     } catch (err) {
       console.error('Error submitting survey to cloud:', err);
       alert('Failed to submit survey. Please check connection.');
@@ -1055,7 +1053,7 @@ export default function App() {
           }}
           onClick={() => setCurrentPage('classroom')}
         >
-          <span>My Classroom Scorecard</span> 🏫
+          <span>My Classroom Scorecard</span> 🪑
         </button>
         <button
           style={{
@@ -1091,7 +1089,7 @@ export default function App() {
           }}
           onClick={() => setCurrentPage('learning')}
         >
-          <span>Learning Center</span> 📚
+          <span>Learning Center</span> 📖
         </button>
         <button
           style={{
@@ -1100,17 +1098,19 @@ export default function App() {
           }}
           onClick={() => setCurrentPage('resources')}
         >
-          <span>Community Resources</span> 📚
+          <span>Community Resources</span> 📖
         </button>
-        <button
-          style={{
-            ...styles.navButton,
-            ...(currentPage === 'survey' ? styles.activeNavButton : {})
-          }}
-          onClick={() => setCurrentPage('survey')}
-        >
-          <span>Survey</span> 📚
-        </button>
+        {currentUserRole === 'Student' && (
+          <button
+            style={{
+              ...styles.navButton,
+              ...(currentPage === 'survey' ? styles.activeNavButton : {})
+            }}
+            onClick={() => setCurrentPage('survey')}
+          >
+            <span>Survey</span> 📖
+          </button>
+        )}
         {currentUserRole === 'Teacher' && (
           <button
             style={{
@@ -1119,7 +1119,7 @@ export default function App() {
             }}
             onClick={() => setCurrentPage('survey-results')}
           >
-            <span>Survey Results</span> 📚
+            <span>Survey Results</span> 📖
           </button>
         )}
         <button
@@ -1328,7 +1328,7 @@ export default function App() {
 
             <div style={{ color: steelBlue, fontWeight: 'bold', fontSize: '16px', marginTop: '15px', marginBottom: '4px' }}>Sleep</div>
             <p style={styles.smallContentText}>
-              Sleep is when your brain and body recharge so you can learn, grow, and feel your best. Getting the right amount of sleep every night helps you succeed in school, sports, and everyday life. (Grade Target: {getGoalFromLookup1('sleep')})
+              Sleep is when your brain and body recharge so you can learn, grow, and feel your best. Getting the right amount of sleep every night helps you succeed in school, sports, and everyday life.
             </p>
             <div style={styles.smallContentHeader}>1. Your Brain Gets Stronger</div>
             <p style={styles.smallContentText}>While you sleep, your brain organizes what you learned during the day and stores it as memories. Good sleep helps you focus, solve problems, and remember what you study.</p>
@@ -1341,7 +1341,7 @@ export default function App() {
 
             <div style={{ color: steelBlue, fontWeight: 'bold', fontSize: '16px', marginTop: '15px', marginBottom: '4px' }}>Physical Activity</div>
             <p style={styles.smallContentText}>
-              Physical activity is any movement that gets your body working, from playing outside to sports, dancing, biking, or walking. Aim for about 60 minutes of activity each day. (Grade Target: {getGoalFromLookup1('physicalActivity')})
+              Physical activity is any movement that gets your body working, from playing outside to sports, dancing, biking, or walking. Aim for about 60 minutes of activity each day.
             </p>
             <div style={styles.smallContentHeader}>1. Exercise Builds a Strong Body</div>
             <p style={styles.smallContentText}>Being active strengthens your heart, muscles, and bones while improving balance, coordination, and endurance.</p>
@@ -1354,7 +1354,7 @@ export default function App() {
 
             <div style={{ color: steelBlue, fontWeight: 'bold', fontSize: '16px', marginTop: '15px', marginBottom: '4px' }}>Water</div>
             <p style={styles.smallContentText}>
-              Water is the best drink for your body because every organ depends on it to work properly. Staying hydrated helps you feel energized and ready to learn. (Grade Target: {getGoalFromLookup1('water')})
+              Water is the best drink for your body because every organ depends on it to work properly. Staying hydrated helps you feel energized and ready to learn.
             </p>
             <div style={styles.smallContentHeader}>1. Water Powers Your Brain</div>
             <p style={styles.smallContentText}>Even mild dehydration can make it harder to concentrate, remember information, and stay alert during school.</p>
@@ -1367,7 +1367,7 @@ export default function App() {
 
             <div style={{ color: steelBlue, fontWeight: 'bold', fontSize: '16px', marginTop: '15px', marginBottom: '4px' }}>Fruits & Vegetables</div>
             <p style={styles.smallContentText}>
-              Fruits and vegetables are packed with vitamins, minerals, fiber, and antioxidants that help your body stay healthy. Eating a colorful variety gives your body many important nutrients. (Grade Target: {getGoalFromLookup1('fruitsVeg')})
+              Fruits and vegetables are packed with vitamins, minerals, fiber, and antioxidants that help your body stay healthy. Eating a colorful variety gives your body many important nutrients.
             </p>
             <div style={styles.smallContentHeader}>1. Colors Mean Different Nutrients</div>
             <p style={styles.smallContentText}>Red, orange, yellow, green, blue, and purple fruits and vegetables all contain different nutrients that help your body in different ways.</p>
@@ -1380,7 +1380,7 @@ export default function App() {
 
             <div style={{ color: steelBlue, fontWeight: 'bold', fontSize: '16px', marginTop: '15px', marginBottom: '4px' }}>Whole Foods</div>
             <p style={styles.smallContentText}>
-              Whole foods are foods that are close to their natural form with little processing, like apples, oatmeal, eggs, beans, yogurt, nuts, and fresh vegetables. They provide the nutrients your body needs to grow and stay healthy. (Grade Target: {getGoalFromLookup1('wholeFoods')})
+              Whole foods are foods that are close to their natural form with little processing, like apples, oatmeal, eggs, beans, yogurt, nuts, and fresh vegetables. They provide the nutrients your body needs to grow and stay healthy.
             </p>
             <div style={styles.smallContentHeader}>1. Better Fuel</div>
             <p style={styles.smallContentText}>Whole foods usually contain more fiber, vitamins, and minerals than highly processed foods, helping your body work its best.</p>
@@ -1393,7 +1393,7 @@ export default function App() {
 
             <div style={{ color: steelBlue, fontWeight: 'bold', fontSize: '16px', marginTop: '15px', marginBottom: '4px' }}>Ultra-Processed Foods</div>
             <p style={styles.smallContentText}>
-              Ultra-processed foods are made with many added ingredients and often contain extra sugar, salt, unhealthy fats, or artificial flavors. Examples include many chips, candy, soda, and packaged desserts. (Grade Target: {getGoalFromLookup1('upf')})
+              Ultra-processed foods are made with many added ingredients and often contain extra sugar, salt, unhealthy fats, or artificial flavors. Examples include many chips, candy, soda, and packaged desserts.
             </p>
             <div style={styles.smallContentHeader}>1. Fine Sometimes, Not All the Time</div>
             <p style={styles.smallContentText}>Ultra-processed foods can be enjoyable occasionally, but eating too many may crowd out more nutritious foods your body needs.</p>
@@ -1406,7 +1406,7 @@ export default function App() {
 
             <div style={{ color: steelBlue, fontWeight: 'bold', fontSize: '16px', marginTop: '15px', marginBottom: '4px' }}>Sugary Drinks</div>
             <p style={styles.smallContentText}>
-              Sugary drinks include soda, many sports drinks, sweet teas, fruit drinks with added sugar, and energy drinks. They often contain lots of sugar but very few nutrients. (Grade Target: {getGoalFromLookup1('sugaryDrinks')})
+              Sugary drinks include soda, many sports drinks, sweet teas, fruit drinks with added sugar, and energy drinks. They often contain lots of sugar but very few nutrients.
             </p>
             <div style={styles.smallContentHeader}>1. Sugar Adds Up Fast</div>
             <p style={styles.smallContentText}>One sugary drink can contain many teaspoons of added sugar. Drinking them often can make it harder to meet healthy nutrition goals.</p>
@@ -1419,7 +1419,7 @@ export default function App() {
 
             <div style={{ color: steelBlue, fontWeight: 'bold', fontSize: '16px', marginTop: '15px', marginBottom: '4px' }}>Mood</div>
             <p style={styles.smallContentText}>
-              Your mood is how you feel emotionally throughout the day. Everyone has good days and bad days, and healthy habits can help support a more positive mood over time. (Grade Target: {getGoalFromLookup1('mood')})
+              Your mood is how you feel emotionally throughout the day. Everyone has good days and bad days, and healthy habits can help support a more positive mood over time.
             </p>
             <div style={styles.smallContentHeader}>1. Healthy Habits Work Together</div>
             <p style={styles.smallContentText}>Getting enough sleep, drinking water, eating nutritious foods, and staying active all work together to help you feel your best.</p>
@@ -1482,7 +1482,7 @@ export default function App() {
         )}
 
         {/* Survey */}
-        {currentPage === 'survey' && (
+        {currentPage === 'survey' && currentUserRole === 'Student' && (
           <div style={{ textAlign: 'left', maxWidth: '700px' }}>
             <h2 style={styles.pageHeaderTitle}>Survey</h2>
             <div style={{ fontWeight: 'bold', fontSize: '14px', color: charBlack, marginBottom: '4px' }}>Help Us Help You!</div>
@@ -1491,134 +1491,111 @@ export default function App() {
             </p>
             <div style={{ height: '5px' }} />
 
-            {surveySuccessMsg && <div style={{ color: 'green', fontWeight: 'bold', marginBottom: '10px' }}>{surveySuccessMsg}</div>}
+            <form onSubmit={handleSurveySubmit} style={{ backgroundColor: cream, padding: '25px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div>
+                <p style={{ fontWeight: 'bold', marginBottom: '8px', color: charBlack }}>Which healthy habit is the hardest for you to practice consistently?</p>
+                <select
+                  value={studentSurvey.hardestHabit}
+                  onChange={(e) => setStudentSurvey({ ...studentSurvey, hardestHabit: e.target.value })}
+                  style={{ ...styles.inputBox, width: '100%', backgroundColor: cream }}
+                >
+                  <option value="">Select option (optional)</option>
+                  {[
+                    'Getting enough sleep',
+                    'Drinking enough water',
+                    'Eating fruits and vegetables',
+                    'Being physically active',
+                    'Limiting sugary drinks or ultra-processed foods',
+                    'Nothing in particular right now',
+                  ].map((opt) => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
+              </div>
 
-            <form onSubmit={handleSurveySubmit} style={{ backgroundColor: '#FFF', padding: '25px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              {currentUserRole === 'Teacher' ? (
-                <div>
-                  <p style={{ fontWeight: 'bold', marginBottom: '8px', color: charBlack }}>What is the biggest health or wellness challenge you see affecting your students' ability to learn?</p>
-                  <select
-                    value={studentSurvey.teacherChallenge || ''}
-                    onChange={(e) => setStudentSurvey({ ...studentSurvey, teacherChallenge: e.target.value })}
-                    style={{ ...styles.inputBox, width: '100%' }}
-                  >
-                    <option value="">Select challenge (optional)</option>
-                    <option value="Sleep">Sleep</option>
-                    <option value="Nutrition">Nutrition</option>
-                    <option value="Physical activity">Physical activity</option>
-                    <option value="Hydration">Hydration</option>
-                    <option value="Stress or emotional well-being">Stress or emotional well-being</option>
-                    <option value="Attendance">Attendance</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-              ) : (
-                <>
-                  <div>
-                    <p style={{ fontWeight: 'bold', marginBottom: '8px', color: charBlack }}>Which healthy habit is the hardest for you to practice consistently?</p>
-                    <select
-                      value={studentSurvey.hardestHabit}
-                      onChange={(e) => setStudentSurvey({ ...studentSurvey, hardestHabit: e.target.value })}
-                      style={{ ...styles.inputBox, width: '100%' }}
-                    >
-                      <option value="">Select option (optional)</option>
-                      {[
-                        'Getting enough sleep',
-                        'Drinking enough water',
-                        'Eating fruits and vegetables',
-                        'Being physically active',
-                        'Limiting sugary drinks or ultra-processed foods',
-                        'Nothing in particular right now',
-                      ].map((opt) => (
-                        <option key={opt} value={opt}>{opt}</option>
-                      ))}
-                    </select>
-                  </div>
+              <div>
+                <p style={{ fontWeight: 'bold', marginBottom: '8px', color: charBlack }}>What makes healthy habits difficult for you?</p>
+                {[
+                  "I don't have enough time",
+                  'Healthy foods or activities cost too much',
+                  "I don't have transportation",
+                  'I have too much homework or other responsibilities',
+                  "I don't have a safe place to be active",
+                  "I don't know where to find healthy resources",
+                  'Something else',
+                  'Nothing in particular right now',
+                ].map((opt) => (
+                  <label key={opt} style={{ display: 'block', fontSize: '13px', marginBottom: '4px', cursor: 'pointer', color: charBlack }}>
+                    <input
+                      type="checkbox"
+                      checked={studentSurvey.difficulties.includes(opt)}
+                      onChange={() => handleCheckboxChange('difficulties', opt)}
+                    />{' '}
+                    {opt}
+                  </label>
+                ))}
+              </div>
 
-                  <div>
-                    <p style={{ fontWeight: 'bold', marginBottom: '8px', color: charBlack }}>What makes healthy habits difficult for you?</p>
-                    {[
-                      "I don't have enough time",
-                      'Healthy foods or activities cost too much',
-                      "I don't have transportation",
-                      'I have too much homework or other responsibilities',
-                      "I don't have a safe place to be active",
-                      "I don't know where to find healthy resources",
-                      'Something else',
-                      'Nothing in particular right now',
-                    ].map((opt) => (
-                      <label key={opt} style={{ display: 'block', fontSize: '13px', marginBottom: '4px', cursor: 'pointer', color: charBlack }}>
-                        <input
-                          type="checkbox"
-                          checked={studentSurvey.difficulties.includes(opt)}
-                          onChange={() => handleCheckboxChange('difficulties', opt)}
-                        />{' '}
-                        {opt}
-                      </label>
-                    ))}
-                  </div>
+              <div>
+                <p style={{ fontWeight: 'bold', marginBottom: '8px', color: charBlack }}>Which free community resources would you like to learn more about?</p>
+                {[
+                  'Free student meals',
+                  'Food pantries',
+                  'Recreation centers',
+                  'Parks, playgrounds, and trails',
+                  'Youth sports',
+                  'Homework help or tutoring',
+                  'Mentoring programs',
+                  'None right now',
+                ].map((opt) => (
+                  <label key={opt} style={{ display: 'block', fontSize: '13px', marginBottom: '4px', cursor: 'pointer', color: charBlack }}>
+                    <input
+                      type="checkbox"
+                      checked={studentSurvey.resourcesOfInterest.includes(opt)}
+                      onChange={() => handleCheckboxChange('resourcesOfInterest', opt)}
+                    />{' '}
+                    {opt}
+                  </label>
+                ))}
+              </div>
 
-                  <div>
-                    <p style={{ fontWeight: 'bold', marginBottom: '8px', color: charBlack }}>Which free community resources would you like to learn more about?</p>
-                    {[
-                      'Free student meals',
-                      'Food pantries',
-                      'Recreation centers',
-                      'Parks, playgrounds, and trails',
-                      'Youth sports',
-                      'Homework help or tutoring',
-                      'Mentoring programs',
-                      'None right now',
-                    ].map((opt) => (
-                      <label key={opt} style={{ display: 'block', fontSize: '13px', marginBottom: '4px', cursor: 'pointer', color: charBlack }}>
-                        <input
-                          type="checkbox"
-                          checked={studentSurvey.resourcesOfInterest.includes(opt)}
-                          onChange={() => handleCheckboxChange('resourcesOfInterest', opt)}
-                        />{' '}
-                        {opt}
-                      </label>
-                    ))}
-                  </div>
+              <div>
+                <p style={{ fontWeight: 'bold', marginBottom: '8px', color: charBlack }}>How has practicing healthy habits affected you this month?</p>
+                {[
+                  'I have more energy',
+                  'I can focus better in class',
+                  'I’m sleeping better or more',
+                  'My mood has improved',
+                  'I feel stronger or more active',
+                  'I haven’t noticed a difference, yet',
+                ].map((opt) => (
+                  <label key={opt} style={{ display: 'block', fontSize: '13px', marginBottom: '4px', cursor: 'pointer', color: charBlack }}>
+                    <input
+                      type="checkbox"
+                      checked={studentSurvey.effects.includes(opt)}
+                      onChange={() => handleCheckboxChange('effects', opt)}
+                    />{' '}
+                    {opt}
+                  </label>
+                ))}
+              </div>
 
-                  <div>
-                    <p style={{ fontWeight: 'bold', marginBottom: '8px', color: charBlack }}>How has practicing healthy habits affected you this month?</p>
-                    {[
-                      'I have more energy',
-                      'I can focus better in class',
-                      'I’m sleeping better or more',
-                      'My mood has improved',
-                      'I feel stronger or more active',
-                      'I haven’t noticed a difference, yet',
-                    ].map((opt) => (
-                      <label key={opt} style={{ display: 'block', fontSize: '13px', marginBottom: '4px', cursor: 'pointer', color: charBlack }}>
-                        <input
-                          type="checkbox"
-                          checked={studentSurvey.effects.includes(opt)}
-                          onChange={() => handleCheckboxChange('effects', opt)}
-                        />{' '}
-                        {opt}
-                      </label>
-                    ))}
-                  </div>
-
-                  <div>
-                    <p style={{ fontWeight: 'bold', marginBottom: '8px', color: charBlack }}>Would you like more healthy habit tips and local resources?</p>
-                    <select
-                      value={studentSurvey.wantsMoreTips}
-                      onChange={(e) => setStudentSurvey({ ...studentSurvey, wantsMoreTips: e.target.value })}
-                      style={{ ...styles.inputBox, width: '100%' }}
-                    >
-                      <option value="">Select option (optional)</option>
-                      {['Yes', 'Maybe later', 'No thanks'].map((opt) => (
-                        <option key={opt} value={opt}>{opt}</option>
-                      ))}
-                    </select>
-                  </div>
-                </>
-              )}
+              <div>
+                <p style={{ fontWeight: 'bold', marginBottom: '8px', color: charBlack }}>Would you like more healthy habit tips and local resources?</p>
+                <select
+                  value={studentSurvey.wantsMoreTips}
+                  onChange={(e) => setStudentSurvey({ ...studentSurvey, wantsMoreTips: e.target.value })}
+                  style={{ ...styles.inputBox, width: '100%', backgroundColor: cream }}
+                >
+                  <option value="">Select option (optional)</option>
+                  {['Yes', 'Maybe later', 'No thanks'].map((opt) => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
+              </div>
 
               <button type="submit" style={{ ...styles.button, width: '200px' }}>Submit</button>
+              {surveySuccessMsg && <div style={{ color: 'green', fontWeight: 'bold', marginTop: '10px' }}>{surveySuccessMsg}</div>}
             </form>
           </div>
         )}
@@ -1633,7 +1610,7 @@ export default function App() {
             </p>
             <div style={{ height: '5px' }} />
 
-            <div style={{ backgroundColor: '#FFF', padding: '25px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div style={{ backgroundColor: cream, padding: '25px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div>
                 <p style={{ fontWeight: 'bold', marginBottom: '8px', color: charBlack }}>Which healthy habit is the hardest for you to practice consistently?</p>
                 {[
