@@ -1204,7 +1204,7 @@ export default function App() {
               <tbody>
                 {habitsConfig.map((h) => {
                   const avg = getClassroomWeeklyAverage(h.key);
-                  const displayGoal = h.goal === '10 minutes' ? '3 stars' : h.goal;
+                  const displayGoal = h.goal === '10 mins' ? '3 stars' : h.goal;
                   return (
                     <tr key={h.key}>
                       <td style={styles.logTableCell}>{h.icon} {h.label}</td>
@@ -1237,7 +1237,7 @@ export default function App() {
               <tbody>
                 {habitsConfig.map((h) => {
                   const avg = getWeeklyAverage(h.key);
-                  const displayGoal = h.goal === '10 minutes' ? '3 stars' : h.goal;
+                  const displayGoal = h.goal === '10 mins' ? '3 stars' : h.goal;
                   return (
                     <tr key={h.key}>
                       <td style={styles.logTableCell}>{h.icon} {h.label}</td>
@@ -1268,7 +1268,7 @@ export default function App() {
                 </thead>
                 <tbody>
                   {habitsConfig.map((h) => {
-                    const displayGoal = h.goal === '10 minutes' ? '3 stars' : h.goal;
+                    const displayGoal = h.goal === '10 mins' ? '3 stars' : h.goal;
                     return (
                       <tr key={h.key}>
                         <td style={styles.logTableCell}>{h.icon} {h.label}</td>
@@ -1325,7 +1325,7 @@ export default function App() {
               <span style={{ color: charBlack }}>
                 {(() => {
                   const goalVal = habitsConfig.find((h) => h.key === selectedCategory)?.goal;
-                  return goalVal === '10 minutes' ? '3 stars' : goalVal;
+                  return goalVal === '10 mins' ? '3 stars' : goalVal;
                 })()}
               </span>
             </div>
