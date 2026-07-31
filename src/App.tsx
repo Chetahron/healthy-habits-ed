@@ -341,10 +341,11 @@ export default function App() {
   // Habit Configs Dynamically Generated from Lookup Tables for any Grade
   const getHabitsConfig = (grade: string): HabitConfig[] => {
     const isElementary = grade === 'K - 5th';
+    const isHighSchool = grade === '9th - 12th';
     return [
       { key: 'sleep', label: 'Sleep', icon: '😴', selections: isElementary ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], selectionLabels: isElementary ? { 12: '12+' } : { 10: '10+' }, goal: getGoalFromLookup1('sleep', grade) },
       { key: 'physicalActivity', label: 'Physical Activity', icon: '🏃', selections: [0, 15, 30, 45, 60], selectionLabels: { 60: '60+' }, goal: getGoalFromLookup1('physicalActivity', grade) },
-      { key: 'water', label: 'Water', icon: '💧', selections: isElementary ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], selectionLabels: isElementary ? { 9: '9+' } : { 11: '11+' }, goal: getGoalFromLookup1('water', grade) },
+      { key: 'water', label: 'Water', icon: '💧', selections: isElementary ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] : isHighSchool ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13] : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], selectionLabels: isElementary ? { 9: '9+' } : isHighSchool ? { 13: '13+' } : { 11: '11+' }, goal: getGoalFromLookup1('water', grade) },
       { key: 'fruitsVeg', label: 'Fruits & Vegetables', icon: '🍎', selections: [0, 1, 2, 3, 4, 5], selectionLabels: { 5: '5+' }, goal: getGoalFromLookup1('fruitsVeg', grade) },
       { key: 'wholeFoods', label: 'Whole Foods', icon: '🥗', selections: [0, 10, 20, 30, 40, 50, 60, 70, 80], selectionLabels: { 80: '80+' }, goal: getGoalFromLookup1('wholeFoods', grade) },
       { key: 'upf', label: 'Ultra-Processed Foods', icon: '🍔', selections: [0, 10, 20, 30, 40], selectionLabels: { 40: '40+' }, goal: getGoalFromLookup1('upf', grade) },
@@ -353,7 +354,7 @@ export default function App() {
     ];
   };
 
-  // Returns the goal text to display, applying K-5th and 6th-8th overrides for
+  // Returns the goal text to display, applying K-5th, 6th-8th, and 9th-12th overrides for
   // Sleep, Water, and Sugary Drinks, and the existing "10 mins" -> "3 stars" swap for Mood.
   const getDisplayGoal = (h: HabitConfig, grade: string): string => {
     if (grade === 'K - 5th') {
@@ -363,6 +364,11 @@ export default function App() {
     if (grade === '6th - 8th') {
       if (h.key === 'sleep') return '8 - 10 hours / night';
       if (h.key === 'water') return '8 - 11 cups / day';
+      if (h.key === 'sugaryDrinks') return '0 - 1 drinks / day';
+    }
+    if (grade === '9th - 12th') {
+      if (h.key === 'sleep') return '8 - 10 hours / night';
+      if (h.key === 'water') return '9 - 13 cups / day';
       if (h.key === 'sugaryDrinks') return '0 - 1 drinks / day';
     }
     return h.goal === '10 mins' ? '3 stars' : h.goal;
@@ -401,13 +407,13 @@ export default function App() {
 
     if (grade === '9th - 12th') {
       if (key === 'water') {
-        if (val >= 10) return 'green';
-        if (val >= 8) return 'yellow';
+        if (val >= 9) return 'green';
+        if (val === 8) return 'yellow';
         return 'red';
       }
       if (key === 'sleep') {
-        if (val >= 9) return 'green';
-        if (val >= 8) return 'yellow';
+        if (val >= 10) return 'green';
+        if (val === 9) return 'yellow';
         return 'red';
       }
       if (key === 'fruitsVeg') {
