@@ -353,12 +353,17 @@ export default function App() {
     ];
   };
 
-  // Returns the goal text to display, applying K-5th overrides for Sleep and Sugary Drinks,
-  // and the existing "10 mins" -> "3 stars" display swap for Mindfulness/Mood.
+  // Returns the goal text to display, applying K-5th and 6th-8th overrides for
+  // Sleep, Water, and Sugary Drinks, and the existing "10 mins" -> "3 stars" swap for Mood.
   const getDisplayGoal = (h: HabitConfig, grade: string): string => {
     if (grade === 'K - 5th') {
       if (h.key === 'sleep') return '9 - 12 hours / night';
       if (h.key === 'sugaryDrinks') return '0 drinks / day';
+    }
+    if (grade === '6th - 8th') {
+      if (h.key === 'sleep') return '8 - 10 hours / night';
+      if (h.key === 'water') return '8 - 11 cups / day';
+      if (h.key === 'sugaryDrinks') return '0 - 1 drinks / day';
     }
     return h.goal === '10 mins' ? '3 stars' : h.goal;
   };
@@ -372,6 +377,24 @@ export default function App() {
       }
       if (key === 'sugaryDrinks') {
         if (val === 0) return 'green';
+        return 'red';
+      }
+    }
+
+    if (grade === '6th - 8th') {
+      if (key === 'sleep') {
+        if (val >= 10) return 'green';
+        if (val === 9) return 'yellow';
+        return 'red';
+      }
+      if (key === 'water') {
+        if (val >= 8) return 'green';
+        if (val === 7) return 'yellow';
+        return 'red';
+      }
+      if (key === 'sugaryDrinks') {
+        if (val === 0) return 'green';
+        if (val === 1) return 'yellow';
         return 'red';
       }
     }
