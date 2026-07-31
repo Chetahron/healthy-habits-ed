@@ -348,12 +348,34 @@ export default function App() {
       { key: 'fruitsVeg', label: 'Fruits & Vegetables', icon: '🍎', selections: [0, 1, 2, 3, 4, 5], selectionLabels: { 5: '5+' }, goal: getGoalFromLookup1('fruitsVeg', grade) },
       { key: 'wholeFoods', label: 'Whole Foods', icon: '🥗', selections: [0, 10, 20, 30, 40, 50, 60, 70, 80], selectionLabels: { 80: '80+' }, goal: getGoalFromLookup1('wholeFoods', grade) },
       { key: 'upf', label: 'Ultra-Processed Foods', icon: '🍔', selections: [0, 10, 20, 30, 40], selectionLabels: { 40: '40+' }, goal: getGoalFromLookup1('upf', grade) },
-      { key: 'sugaryDrinks', label: 'Sugary Drinks', icon: '🧃', selections: [0, 1, 2], selectionLabels: { 2: '2+' }, goal: getGoalFromLookup1('sugaryDrinks', grade) },
+      { key: 'sugaryDrinks', label: 'Sugary Drinks', icon: '🧃', selections: isElementary ? [0, 1] : [0, 1, 2], selectionLabels: isElementary ? { 1: '1+' } : { 2: '2+' }, goal: getGoalFromLookup1('sugaryDrinks', grade) },
       { key: 'mood', label: 'Mood', icon: '⭐', selections: [1, 2, 3], goal: getGoalFromLookup1('mood', grade) },
     ];
   };
 
+  // Returns the goal text to display, applying K-5th overrides for Sleep and Sugary Drinks,
+  // and the existing "10 mins" -> "3 stars" display swap for Mindfulness/Mood.
+  const getDisplayGoal = (h: HabitConfig, grade: string): string => {
+    if (grade === 'K - 5th') {
+      if (h.key === 'sleep') return '9 - 12 hours / night';
+      if (h.key === 'sugaryDrinks') return '0 drinks / day';
+    }
+    return h.goal === '10 mins' ? '3 stars' : h.goal;
+  };
+
   const getHabitColor = (key: HabitKey, val: number, grade: string): 'red' | 'yellow' | 'green' => {
+    if (grade === 'K - 5th') {
+      if (key === 'sleep') {
+        if (val >= 9) return 'green';
+        if (val === 8) return 'yellow';
+        return 'red';
+      }
+      if (key === 'sugaryDrinks') {
+        if (val === 0) return 'green';
+        return 'red';
+      }
+    }
+
     if (grade === '9th - 12th') {
       if (key === 'water') {
         if (val >= 10) return 'green';
@@ -1204,7 +1226,7 @@ export default function App() {
               <tbody>
                 {habitsConfig.map((h) => {
                   const avg = getClassroomWeeklyAverage(h.key);
-                  const displayGoal = h.goal === '10 mins' ? '3 stars' : h.goal;
+                  const displayGoal = getDisplayGoal(h, currentGrade);
                   return (
                     <tr key={h.key}>
                       <td style={styles.logTableCell}>{h.icon} {h.label}</td>
@@ -1237,7 +1259,7 @@ export default function App() {
               <tbody>
                 {habitsConfig.map((h) => {
                   const avg = getWeeklyAverage(h.key);
-                  const displayGoal = h.goal === '10 mins' ? '3 stars' : h.goal;
+                  const displayGoal = getDisplayGoal(h, currentGrade);
                   return (
                     <tr key={h.key}>
                       <td style={styles.logTableCell}>{h.icon} {h.label}</td>
@@ -1268,7 +1290,7 @@ export default function App() {
                 </thead>
                 <tbody>
                   {habitsConfig.map((h) => {
-                    const displayGoal = h.goal === '10 mins' ? '3 stars' : h.goal;
+                    const displayGoal = getDisplayGoal(h, currentGrade);
                     return (
                       <tr key={h.key}>
                         <td style={styles.logTableCell}>{h.icon} {h.label}</td>
@@ -1324,8 +1346,8 @@ export default function App() {
               <span style={{ color: steelBlue, fontWeight: 'bold' }}>Goal: </span>
               <span style={{ color: charBlack }}>
                 {(() => {
-                  const goalVal = habitsConfig.find((h) => h.key === selectedCategory)?.goal;
-                  return goalVal === '10 mins' ? '3 stars' : goalVal;
+                  const habit = habitsConfig.find((h) => h.key === selectedCategory);
+                  return habit ? getDisplayGoal(habit, currentGrade) : '';
                 })()}
               </span>
             </div>
