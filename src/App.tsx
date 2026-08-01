@@ -467,6 +467,11 @@ export default function App() {
       if (val === 1) return 'yellow';
       return 'red';
     }
+    if (key === 'mood') {
+      if (val >= 3) return 'green';
+      if (val === 2) return 'yellow';
+      return 'red';
+    }
     return val >= 8 ? 'green' : val === 7 ? 'yellow' : 'red';
   };
 
