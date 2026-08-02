@@ -339,13 +339,27 @@ export default function App() {
   };
 
   // Habit Configs Dynamically Generated from Lookup Tables for any Grade
+  // NOTE: Water dropdown now differentiates 6th-8th (0-11+) from 9th-12th (0-13+),
+  // per Edit D. Previously both shared the same 0-11+ range, which was too short
+  // for 9th-12th (needed to go up to 13+).
   const getHabitsConfig = (grade: string): HabitConfig[] => {
     const isElementary = grade === 'K - 5th';
     const isHighSchool = grade === '9th - 12th';
+
+    const waterSelections = isElementary
+      ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+      : isHighSchool
+        ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+        : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+    const waterLabels: Record<number, string> = isElementary
+      ? { 9: '9+' }
+      : isHighSchool
+        ? { 13: '13+' }
+        : { 11: '11+' };
     return [
       { key: 'sleep', label: 'Sleep', icon: '😴', selections: isElementary ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], selectionLabels: isElementary ? { 12: '12+' } : { 10: '10+' }, goal: getGoalFromLookup1('sleep', grade) },
       { key: 'physicalActivity', label: 'Physical Activity', icon: '🏃', selections: [0, 15, 30, 45, 60], selectionLabels: { 60: '60+' }, goal: getGoalFromLookup1('physicalActivity', grade) },
-      { key: 'water', label: 'Water', icon: '💧', selections: isElementary ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] : isHighSchool ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13] : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], selectionLabels: isElementary ? { 9: '9+' } : isHighSchool ? { 13: '13+' } : { 11: '11+' }, goal: getGoalFromLookup1('water', grade) },
+      { key: 'water', label: 'Water', icon: '💧', selections: waterSelections, selectionLabels: waterLabels, goal: getGoalFromLookup1('water', grade) },
       { key: 'fruitsVeg', label: 'Fruits & Vegetables', icon: '🍎', selections: [0, 1, 2, 3, 4, 5], selectionLabels: { 5: '5+' }, goal: getGoalFromLookup1('fruitsVeg', grade) },
       { key: 'wholeFoods', label: 'Whole Foods', icon: '🥗', selections: [0, 10, 20, 30, 40, 50, 60, 70, 80], selectionLabels: { 80: '80+' }, goal: getGoalFromLookup1('wholeFoods', grade) },
       { key: 'upf', label: 'Ultra-Processed Foods', icon: '🍔', selections: [0, 10, 20, 30, 40], selectionLabels: { 40: '40+' }, goal: getGoalFromLookup1('upf', grade) },
@@ -356,6 +370,9 @@ export default function App() {
 
   // Returns the goal text to display, applying K-5th, 6th-8th, and 9th-12th overrides for
   // Sleep, Water, and Sugary Drinks, and the existing "10 mins" -> "3 stars" swap for Mood.
+  // NOTE: Added the 9th-12th block (Edit D) - previously 9th-12th fell through to the
+  // raw Lookup1 text ("8-10 hrs", "8-11 cups", "0-1 drinks"), which was both the wrong
+  // format and, for Water, the wrong value (should be 9-13 cups, not 8-11).
   const getDisplayGoal = (h: HabitConfig, grade: string): string => {
     if (grade === 'K - 5th') {
       if (h.key === 'sleep') return '9 - 12 hours / night';
@@ -374,6 +391,25 @@ export default function App() {
     return h.goal === '10 mins' ? '3 stars' : h.goal;
   };
 
+  // ============================================================
+  // BEFORE THE FIX:
+  // 1) getHabitColor had NO explicit rules for 'wholeFoods' or 'upf'.
+  //    Those two keys fell through to the generic catch-all at the
+  //    bottom of the function:
+  //      return val >= 8 ? 'green' : val === 7 ? 'yellow' : 'red';
+  //    That's wrong for Whole Foods (0-80 scale) and UPF (0-40 scale).
+  // 2) The '9th - 12th' block used the WRONG thresholds for sleep and
+  //    water (copied from generic/other-grade values instead of Edit D):
+  //      sleep:  val >= 9 green / val >= 8 yellow / else red   (WRONG)
+  //      water:  val >= 10 green / val >= 8 yellow / else red  (WRONG)
+  //    Edit D actually specifies:
+  //      sleep:  0-8 red, 9 yellow, 10+ green
+  //      water:  0-7 red, 8 yellow, 9+ green
+  // ============================================================
+
+  // AFTER THE FIX:
+  // - Added explicit, grade-independent color rules for 'wholeFoods' and 'upf'.
+  // - Corrected the '9th - 12th' sleep and water thresholds to match Edit D.
   const getHabitColor = (key: HabitKey, val: number, grade: string): 'red' | 'yellow' | 'green' => {
     if (grade === 'K - 5th') {
       if (key === 'sleep') {
@@ -406,14 +442,14 @@ export default function App() {
     }
 
     if (grade === '9th - 12th') {
-      if (key === 'water') {
-        if (val >= 9) return 'green';
-        if (val === 8) return 'yellow';
-        return 'red';
-      }
       if (key === 'sleep') {
         if (val >= 10) return 'green';
         if (val === 9) return 'yellow';
+        return 'red';
+      }
+      if (key === 'water') {
+        if (val >= 9) return 'green';
+        if (val === 8) return 'yellow';
         return 'red';
       }
       if (key === 'fruitsVeg') {
@@ -431,18 +467,6 @@ export default function App() {
         if (val === 1) return 'yellow';
         return 'red';
       }
-    }
-
-    // Whole Foods and Ultra-Processed Foods use the same thresholds for every grade
-    if (key === 'wholeFoods') {
-      if (val >= 80) return 'green';
-      if (val >= 60) return 'yellow';
-      return 'red';
-    }
-    if (key === 'upf') {
-      if (val <= 10) return 'green';
-      if (val <= 20) return 'yellow';
-      return 'red';
     }
 
     if (key === 'water') {
@@ -466,6 +490,20 @@ export default function App() {
       if (val >= min) return 'yellow';
       return 'red';
     }
+    // Whole Foods color rule (same thresholds for every grade)
+    // 0-60 = red, 70 = yellow, 80+ = green
+    if (key === 'wholeFoods') {
+      if (val >= 80) return 'green';
+      if (val === 70) return 'yellow';
+      return 'red';
+    }
+    // Ultra-Processed Foods color rule (same thresholds for every grade)
+    // 0-20 = green, 30 = yellow, 40+ = red (inverted: lower is better)
+    if (key === 'upf') {
+      if (val <= 20) return 'green';
+      if (val === 30) return 'yellow';
+      return 'red';
+    }
     if (key === 'physicalActivity') {
       const target = getLookup3Metric('Activity Target', grade);
       const min = getLookup3Metric('Activity Min', grade);
@@ -477,11 +515,6 @@ export default function App() {
       const target = getLookup3Metric('Sugar Target', grade);
       if (val <= target) return 'green';
       if (val === 1) return 'yellow';
-      return 'red';
-    }
-    if (key === 'mood') {
-      if (val >= 3) return 'green';
-      if (val === 2) return 'yellow';
       return 'red';
     }
     return val >= 8 ? 'green' : val === 7 ? 'yellow' : 'red';
