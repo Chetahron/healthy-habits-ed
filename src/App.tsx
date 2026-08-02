@@ -433,6 +433,18 @@ export default function App() {
       }
     }
 
+    // Whole Foods and Ultra-Processed Foods use the same thresholds for every grade
+    if (key === 'wholeFoods') {
+      if (val >= 80) return 'green';
+      if (val >= 60) return 'yellow';
+      return 'red';
+    }
+    if (key === 'upf') {
+      if (val <= 10) return 'green';
+      if (val <= 20) return 'yellow';
+      return 'red';
+    }
+
     if (key === 'water') {
       const target = getLookup2Metric('Water Target', grade);
       const min = getLookup2Metric('Water Min', grade);
