@@ -351,11 +351,16 @@ export default function App() {
       : isHighSchool
         ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
         : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+    // FIX: explicitly typed as Record<number, string> so TypeScript checks each
+    // ternary branch against that target type directly, instead of inferring a
+    // union type where the other branches' keys show up as `?: undefined`,
+    // which was incompatible with HabitConfig.selectionLabels (Record<number, string>).
     const waterLabels: Record<number, string> = isElementary
       ? { 9: '9+' }
       : isHighSchool
         ? { 13: '13+' }
         : { 11: '11+' };
+
     return [
       { key: 'sleep', label: 'Sleep', icon: '😴', selections: isElementary ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], selectionLabels: isElementary ? { 12: '12+' } : { 10: '10+' }, goal: getGoalFromLookup1('sleep', grade) },
       { key: 'physicalActivity', label: 'Physical Activity', icon: '🏃', selections: [0, 15, 30, 45, 60], selectionLabels: { 60: '60+' }, goal: getGoalFromLookup1('physicalActivity', grade) },
@@ -392,29 +397,31 @@ export default function App() {
   };
 
   // ============================================================
-  // BEFORE THE FIX:
-  // 1) getHabitColor had NO explicit rules for 'wholeFoods' or 'upf'.
-  //    Those two keys fell through to the generic catch-all at the
-  //    bottom of the function:
+  // FIX LOG (most recent round):
+  // 1) 'mood' had NO explicit color rule anywhere in this function.
+  //    Mood values are only 1, 2, or 3, so they always fell through
+  //    to the generic catch-all at the bottom:
   //      return val >= 8 ? 'green' : val === 7 ? 'yellow' : 'red';
-  //    That's wrong for Whole Foods (0-80 scale) and UPF (0-40 scale).
-  // 2) The '9th - 12th' block used the WRONG thresholds for sleep and
-  //    water (copied from generic/other-grade values instead of Edit D):
-  //      sleep:  val >= 9 green / val >= 8 yellow / else red   (WRONG)
-  //      water:  val >= 10 green / val >= 8 yellow / else red  (WRONG)
-  //    Edit D actually specifies:
-  //      sleep:  0-8 red, 9 yellow, 10+ green
-  //      water:  0-7 red, 8 yellow, 9+ green
+  //    Since mood is never >= 7, it was ALWAYS red. Added an explicit
+  //    grade-independent mood rule: 1 = red, 2 = yellow, 3 = green.
+  // 2) 'water' for K - 5th had NO explicit rule, so it fell through to
+  //    the generic Lookup2-based calculation (target=8, min=6), which
+  //    produced TWO yellow values (6 and 7) instead of one and used the
+  //    wrong cutoffs. Added an explicit K-5th water rule matching Edit
+  //    B / Edit 23-24 spec: red = 0-4, yellow = 5, green = 6-9+.
   // ============================================================
-
-  // AFTER THE FIX:
-  // - Added explicit, grade-independent color rules for 'wholeFoods' and 'upf'.
-  // - Corrected the '9th - 12th' sleep and water thresholds to match Edit D.
   const getHabitColor = (key: HabitKey, val: number, grade: string): 'red' | 'yellow' | 'green' => {
     if (grade === 'K - 5th') {
       if (key === 'sleep') {
         if (val >= 9) return 'green';
         if (val === 8) return 'yellow';
+        return 'red';
+      }
+      // FIX: explicit K-5th water rule added (was missing, causing fallthrough
+      // to the generic Lookup2 calc with wrong thresholds / two yellows).
+      if (key === 'water') {
+        if (val >= 6) return 'green';
+        if (val === 5) return 'yellow';
         return 'red';
       }
       if (key === 'sugaryDrinks') {
@@ -502,6 +509,13 @@ export default function App() {
     if (key === 'upf') {
       if (val <= 20) return 'green';
       if (val === 30) return 'yellow';
+      return 'red';
+    }
+    // Mood color rule (same thresholds for every grade)
+    // 1 = red, 2 = yellow, 3 = green
+    if (key === 'mood') {
+      if (val >= 3) return 'green';
+      if (val === 2) return 'yellow';
       return 'red';
     }
     if (key === 'physicalActivity') {
