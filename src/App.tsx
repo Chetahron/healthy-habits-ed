@@ -413,15 +413,15 @@ export default function App() {
   const getHabitColor = (key: HabitKey, val: number, grade: string): 'red' | 'yellow' | 'green' => {
     if (grade === 'K - 5th') {
       if (key === 'sleep') {
-        if (val >= 9) return 'green';
-        if (val === 8) return 'yellow';
+        if (val >= 10) return 'green';
+        if (val === 9) return 'yellow';
         return 'red';
       }
       // FIX: explicit K-5th water rule added (was missing, causing fallthrough
       // to the generic Lookup2 calc with wrong thresholds / two yellows).
       if (key === 'water') {
-        if (val >= 6) return 'green';
-        if (val === 5) return 'yellow';
+        if (val >= 9) return 'green';
+        if (val === 8) return 'yellow';
         return 'red';
       }
       if (key === 'sugaryDrinks') {
@@ -432,13 +432,13 @@ export default function App() {
 
     if (grade === '6th - 8th') {
       if (key === 'sleep') {
-        if (val >= 10) return 'green';
-        if (val === 9) return 'yellow';
+        if (val >= 9) return 'green';
+        if (val === 8) return 'yellow';
         return 'red';
       }
       if (key === 'water') {
-        if (val >= 8) return 'green';
-        if (val === 7) return 'yellow';
+        if (val >= 9) return 'green';
+        if (val === 8) return 'yellow';
         return 'red';
       }
       if (key === 'sugaryDrinks') {
@@ -450,13 +450,13 @@ export default function App() {
 
     if (grade === '9th - 12th') {
       if (key === 'sleep') {
-        if (val >= 10) return 'green';
-        if (val === 9) return 'yellow';
+        if (val >= 9) return 'green';
+        if (val === 8) return 'yellow';
         return 'red';
       }
       if (key === 'water') {
-        if (val >= 9) return 'green';
-        if (val === 8) return 'yellow';
+        if (val >= 10) return 'green';
+        if (val === 9) return 'yellow';
         return 'red';
       }
       if (key === 'fruitsVeg') {
@@ -498,17 +498,17 @@ export default function App() {
       return 'red';
     }
     // Whole Foods color rule (same thresholds for every grade)
-    // 0-60 = red, 70 = yellow, 80+ = green
+    // 0-30 = red, 40-70 = yellow, 80+ = green
     if (key === 'wholeFoods') {
       if (val >= 80) return 'green';
-      if (val === 70) return 'yellow';
+      if (val >= 40) return 'yellow';
       return 'red';
     }
     // Ultra-Processed Foods color rule (same thresholds for every grade)
-    // 0-20 = green, 30 = yellow, 40+ = red (inverted: lower is better)
+    // 0-10 = green, 20 = yellow, 30-40 = red (inverted: lower is better)
     if (key === 'upf') {
-      if (val <= 20) return 'green';
-      if (val === 30) return 'yellow';
+      if (val <= 10) return 'green';
+      if (val === 20) return 'yellow';
       return 'red';
     }
     // Mood color rule (same thresholds for every grade)
