@@ -488,10 +488,10 @@ export default function App() {
       return 'red';
     }
     // Whole Foods color rule (same thresholds for every grade)
-    // green = 80+ (meets ">= 80%" goal), yellow = 60-70 (one stage off), red = 0-50
+    // green = 80+ (meets ">= 80%" goal), yellow = 70 (one stage off), red = 0-60
     if (key === 'wholeFoods') {
       if (val >= 80) return 'green';
-      if (val >= 60) return 'yellow';
+      if (val >= 70) return 'yellow';
       return 'red';
     }
     // Ultra-Processed Foods color rule (same thresholds for every grade)
