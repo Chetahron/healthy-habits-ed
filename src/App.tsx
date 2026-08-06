@@ -1835,7 +1835,3 @@ export default function App() {
     </div>
   );
 }
-{
-}{"hello hjow u doing"}{}
-{
-}
