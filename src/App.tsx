@@ -442,7 +442,8 @@ export default function App() {
         return 'red';
       }
       if (key === 'sugaryDrinks') {
-        if (val <= 1) return 'green';
+        if (val === 0) return 'green';
+        if (val === 1) return 'yellow';
         return 'red';
       }
     }
@@ -458,18 +459,9 @@ export default function App() {
         if (val === 8) return 'yellow';
         return 'red';
       }
-      if (key === 'fruitsVeg') {
-        if (val >= 5) return 'green';
-        if (val >= 3) return 'yellow';
-        return 'red';
-      }
-      if (key === 'physicalActivity') {
-        if (val >= 60) return 'green';
-        if (val >= 30) return 'yellow';
-        return 'red';
-      }
       if (key === 'sugaryDrinks') {
-        if (val <= 1) return 'green';
+        if (val === 0) return 'green';
+        if (val === 1) return 'yellow';
         return 'red';
       }
     }
@@ -488,18 +480,18 @@ export default function App() {
       if (val >= min) return 'yellow';
       return 'red';
     }
+    // Fruits & Veg color rule (same thresholds for every grade)
+    // green = 5+ (meets ">= 5 servings" goal), yellow = 4 (one stage off), red = 0-3
     if (key === 'fruitsVeg') {
-      const target = getLookup2Metric('Fruit Target', grade);
-      const min = getLookup2Metric('FruitMin', grade);
-      if (val >= target) return 'green';
-      if (val >= min) return 'yellow';
+      if (val >= 5) return 'green';
+      if (val >= 4) return 'yellow';
       return 'red';
     }
     // Whole Foods color rule (same thresholds for every grade)
-    // 0-30 = red, 40-70 = yellow, 80+ = green
+    // green = 80+ (meets ">= 80%" goal), yellow = 60-70 (one stage off), red = 0-50
     if (key === 'wholeFoods') {
       if (val >= 80) return 'green';
-      if (val >= 40) return 'yellow';
+      if (val >= 60) return 'yellow';
       return 'red';
     }
     // Ultra-Processed Foods color rule (same thresholds for every grade)
@@ -516,11 +508,11 @@ export default function App() {
       if (val === 2) return 'yellow';
       return 'red';
     }
+    // Physical Activity color rule (same thresholds for every grade)
+    // green = 60+ (meets "60 mins" goal), yellow = 45 (one stage off), red = 0-30
     if (key === 'physicalActivity') {
-      const target = getLookup3Metric('Activity Target', grade);
-      const min = getLookup3Metric('Activity Min', grade);
-      if (val >= target) return 'green';
-      if (val >= min) return 'yellow';
+      if (val >= 60) return 'green';
+      if (val >= 45) return 'yellow';
       return 'red';
     }
     if (key === 'sugaryDrinks') {
