@@ -1495,7 +1495,7 @@ export default function App() {
 
             <div style={{ color: steelBlue, fontWeight: 'bold', fontSize: '16px', marginTop: '15px', marginBottom: '4px' }}>Water</div>
             <p style={styles.smallContentText}>
-              Water is the best drink for your body because every organ depends on it to work properly. Staying hydrated helps you feel energized and ready to learn.
+              Water is the best drink for your body because every organ depends on it to work properly. Staying hydrated helps you feel energized and ready to learn. 1 cup of water is about 8oz. A can of soda is 12oz. Standard water bottles are approximately 17oz. Larger sports water bottles typically vary from 20-64oz. Check the size of your reusable water bottle to determine approximately how many ounces and cups it is in order to log your daily data accurately.
             </p>
             <div style={styles.smallContentHeader}>1. Water Powers Your Brain</div>
             <p style={styles.smallContentText}>Even mild dehydration can make it harder to concentrate, remember information, and stay alert during school.</p>
