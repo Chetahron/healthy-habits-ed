@@ -1875,7 +1875,53 @@ export default function App() {
           </div>
         )}
 
-        )
+        {/* About */}
+        {currentPage === 'about' && (
+          <div style={{ textAlign: 'left', maxWidth: '800px' }}>
+            <h2 style={styles.pageHeaderTitle}>About HealthyHabitsED</h2>
+            <p style={styles.smallContentText}>
+              HealthyHabitsED helps K–12 students learn about healthy habits, track their daily wellness goals, and understand how small choices can support their bodies, minds, and futures. The app focuses on eight important areas of wellness: sleep, physical activity, water, fruits and vegetables, whole foods, ultra-processed foods, sugary drinks, and mood. HealthyHabitsED is designed to make healthy habits simple, educational, and achievable. Students can track their own progress, view trends over time, learn why each habit matters, discover local community resources, and participate in surveys that help schools understand what students need. Classroom scorecards show overall class trends without focusing on individual students, helping teachers encourage healthy habits while creating a supportive environment for everyone.
+            </p>
+            <p style={styles.smallContentText}>
+              The sections below describe the tabs and pages available in the left navigation menu and explain what you can find and do in each one. Use them as a quick guide to getting the most out of HealthyHabitsED.
+            </p>
+
+            <div style={{ color: steelBlue, fontWeight: 'bold', fontSize: '16px', marginTop: '15px', marginBottom: '4px' }}>My Classroom Scorecard</div>
+            <p style={styles.smallContentText}>
+              The Classroom Scorecard shows the 7-day average healthy habit scores for students in the classroom. It helps teachers and students see overall classroom trends, celebrate progress, and identify habits that the class may want to work on together. Teacher data is not included.
+            </p>
+
+            <div style={{ color: steelBlue, fontWeight: 'bold', fontSize: '16px', marginTop: '15px', marginBottom: '4px' }}>My Scorecard</div>
+            <p style={styles.smallContentText}>
+              My Scorecard shows your personal 7-day average for each healthy habit. It helps you see which habits you're doing well with and which ones you may want to practice more consistently. Only you can see this data. This is available for individual students and teachers.
+            </p>
+
+            <div style={{ color: steelBlue, fontWeight: 'bold', fontSize: '16px', marginTop: '15px', marginBottom: '4px' }}>My Daily Data Log</div>
+            <p style={styles.smallContentText}>
+              The Daily Data Log is where you record your healthy habit information for the current day. Logging your habits each day helps you build awareness of your routines and gives you data to see your progress over time. You can update the data multiple times throughout the day. Your last submission before midnight will be recorded for that day. This is available for individual students and teachers.
+            </p>
+
+            <div style={{ color: steelBlue, fontWeight: 'bold', fontSize: '16px', marginTop: '15px', marginBottom: '4px' }}>My Daily Data View</div>
+            <p style={styles.smallContentText}>
+              The Daily Data View lets you look back at 28 days of your healthy habit data across four weeks. Use it to spot patterns, see your progress, and understand how your habits change from day to day and week to week. Only you can see this data. This is available for individual students and teachers.
+            </p>
+
+            <div style={{ color: steelBlue, fontWeight: 'bold', fontSize: '16px', marginTop: '15px', marginBottom: '4px' }}>Learning Center</div>
+            <p style={styles.smallContentText}>
+              The Learning Center teaches you about the eight HealthyHabitsED habits: sleep, physical activity, water, fruits and vegetables, whole foods, ultra-processed foods, sugary drinks, and mood. Each section explains what the habit means, why it matters, and how healthy choices can support your body, brain, learning, and future.
+            </p>
+
+            <div style={{ color: steelBlue, fontWeight: 'bold', fontSize: '16px', marginTop: '15px', marginBottom: '4px' }}>Community Resources</div>
+            <p style={styles.smallContentText}>
+              Community Resources connects students and families with local programs and services that can support health, learning, and wellness. Resources may include food pantries, free student meals, parks, playgrounds, trails, recreation centers, youth sports, homework help, and mentoring opportunities.
+            </p>
+
+            <div style={{ color: steelBlue, fontWeight: 'bold', fontSize: '16px', marginTop: '15px', marginBottom: '4px' }}>Survey</div>
+            <p style={styles.smallContentText}>
+              The Survey gives students an opportunity to share their experiences, challenges, and resource needs by answering questions about their healthy habits and wellness. Teachers cannot answer survey questions, but they can view compiled, cumulative survey results for the entire classroom (not individual student responses) to better understand common needs and provide helpful guidance, information, and community resources where they can.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
