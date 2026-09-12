@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db } from './firebase';
 import { collection, doc, setDoc, onSnapshot } from 'firebase/firestore';
-import logo from './assets/logo.png';
+import logo from './assets/logo2.png';
 import sidebarLogo from './assets/new-sidebar-logo.png';
 
 // --- BACKGROUND LOOKUP TABLES (Lookup 1, Lookup 2, Lookup 3) ---
