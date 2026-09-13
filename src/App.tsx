@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db } from './firebase';
 import { collection, doc, setDoc, onSnapshot } from 'firebase/firestore';
-import logo from './assets/logo2.png';
+import logo from './assets/logo.png';
 import sidebarLogo from './assets/new-sidebar-logo.png';
 
 // --- BACKGROUND LOOKUP TABLES (Lookup 1, Lookup 2, Lookup 3) ---
@@ -372,10 +372,6 @@ export default function App() {
       : isHighSchool
         ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
         : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
-    // FIX: explicitly typed as Record<number, string> so TypeScript checks each
-    // ternary branch against that target type directly, instead of inferring a
-    // union type where the other branches' keys show up as `?: undefined`,
-    // which was incompatible with HabitConfig.selectionLabels (Record<number, string>).
     const waterLabels: Record<number, string> = isElementary
       ? { 9: '9+' }
       : isHighSchool
@@ -394,11 +390,6 @@ export default function App() {
     ];
   };
 
-  // Returns the goal text to display, applying K-5th, 6th-8th, and 9th-12th overrides for
-  // Sleep, Water, and Sugary Drinks, and the existing "10 mins" -> "3 stars" swap for Mood.
-  // NOTE: Added the 9th-12th block (Edit D) - previously 9th-12th fell through to the
-  // raw Lookup1 text ("8-10 hrs", "8-11 cups", "0-1 drinks"), which was both the wrong
-  // format and, for Water, the wrong value (should be 9-13 cups, not 8-11).
   const getDisplayGoal = (h: HabitConfig, grade: string): string => {
     if (grade === 'K - 5th') {
       if (h.key === 'sleep') return '9 - 12 hours / night';
@@ -417,20 +408,6 @@ export default function App() {
     return h.goal === '10 mins' ? '3 stars' : h.goal;
   };
 
-  // ============================================================
-  // FIX LOG (most recent round):
-  // 1) 'mood' had NO explicit color rule anywhere in this function.
-  //    Mood values are only 1, 2, or 3, so they always fell through
-  //    to the generic catch-all at the bottom:
-  //      return val >= 8 ? 'green' : val === 7 ? 'yellow' : 'red';
-  //    Since mood is never >= 7, it was ALWAYS red. Added an explicit
-  //    grade-independent mood rule: 1 = red, 2 = yellow, 3 = green.
-  // 2) 'water' for K - 5th had NO explicit rule, so it fell through to
-  //    the generic Lookup2-based calculation (target=8, min=6), which
-  //    produced TWO yellow values (6 and 7) instead of one and used the
-  //    wrong cutoffs. Added an explicit K-5th water rule matching Edit
-  //    B / Edit 23-24 spec: red = 0-4, yellow = 5, green = 6-9+.
-  // ============================================================
   const getHabitColor = (key: HabitKey, val: number, grade: string): 'red' | 'yellow' | 'green' => {
     if (grade === 'K - 5th') {
       if (key === 'sleep') {
@@ -438,8 +415,6 @@ export default function App() {
         if (val === 8) return 'yellow';
         return 'red';
       }
-      // FIX: explicit K-5th water rule added (was missing, causing fallthrough
-      // to the generic Lookup2 calc with wrong thresholds / two yellows).
       if (key === 'water') {
         if (val >= 6) return 'green';
         if (val === 5) return 'yellow';
@@ -501,36 +476,26 @@ export default function App() {
       if (val >= min) return 'yellow';
       return 'red';
     }
-    // Fruits & Veg color rule (same thresholds for every grade)
-    // green = 5+ (meets ">= 5 servings" goal), yellow = 4 (one stage off), red = 0-3
     if (key === 'fruitsVeg') {
       if (val >= 5) return 'green';
       if (val >= 4) return 'yellow';
       return 'red';
     }
-    // Whole Foods color rule (same thresholds for every grade)
-    // green = 80+ (meets ">= 80%" goal), yellow = 70 (one stage off), red = 0-60
     if (key === 'wholeFoods') {
       if (val >= 80) return 'green';
       if (val >= 70) return 'yellow';
       return 'red';
     }
-    // Ultra-Processed Foods color rule (same thresholds for every grade)
-    // 0-20 = green (meets "<= 20%" goal), 30 = yellow, 40 = red (inverted: lower is better)
     if (key === 'upf') {
       if (val <= 20) return 'green';
       if (val === 30) return 'yellow';
       return 'red';
     }
-    // Mood color rule (same thresholds for every grade)
-    // 1 = red, 2 = yellow, 3 = green
     if (key === 'mood') {
       if (val >= 3) return 'green';
       if (val === 2) return 'yellow';
       return 'red';
     }
-    // Physical Activity color rule (same thresholds for every grade)
-    // green = 60+ (meets "60 mins" goal), yellow = 45 (one stage off), red = 0-30
     if (key === 'physicalActivity') {
       if (val >= 60) return 'green';
       if (val >= 45) return 'yellow';
@@ -683,9 +648,14 @@ export default function App() {
       const docId = `survey_${currentUser || 'anon'}`;
       await setDoc(doc(db, 'surveys', docId), finalSurvey);
       setSurveySuccessMsg('Your survey responses have been successfully submitted.');
-    } catch (err) {
+    } catch (err: any) {
+      // TEMP DIAGNOSTIC: showing the real Firebase error code/message so we can
+      // pinpoint the exact cause (permission-denied, unavailable, invalid-argument, etc.)
+      // instead of the generic "check connection" message. Revert once diagnosed.
       console.error('Error submitting survey to cloud:', err);
-      alert('Failed to submit survey. Please check connection.');
+      const code = err?.code ? ` (code: ${err.code})` : '';
+      const message = err?.message || String(err);
+      alert(`Failed to submit survey${code}: ${message}`);
     }
   };
 
