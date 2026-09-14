@@ -360,9 +360,7 @@ export default function App() {
   };
 
   // Habit Configs Dynamically Generated from Lookup Tables for any Grade
-  // NOTE: Water dropdown now differentiates 6th-8th (0-11+) from 9th-12th (0-13+),
-  // per Edit D. Previously both shared the same 0-11+ range, which was too short
-  // for 9th-12th (needed to go up to 13+).
+  // Water dropdown differentiates 6th-8th (0-11+) from 9th-12th (0-13+).
   const getHabitsConfig = (grade: string): HabitConfig[] => {
     const isElementary = grade === 'K - 5th';
     const isHighSchool = grade === '9th - 12th';
@@ -372,10 +370,10 @@ export default function App() {
       : isHighSchool
         ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
         : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
-    // FIX: explicitly typed as Record<number, string> so TypeScript checks each
+    // Explicitly typed as Record<number, string> so TypeScript checks each
     // ternary branch against that target type directly, instead of inferring a
     // union type where the other branches' keys show up as `?: undefined`,
-    // which was incompatible with HabitConfig.selectionLabels (Record<number, string>).
+    // which is incompatible with HabitConfig.selectionLabels (Record<number, string>).
     const waterLabels: Record<number, string> = isElementary
       ? { 9: '9+' }
       : isHighSchool
@@ -396,9 +394,6 @@ export default function App() {
 
   // Returns the goal text to display, applying K-5th, 6th-8th, and 9th-12th overrides for
   // Sleep, Water, and Sugary Drinks, and the existing "10 mins" -> "3 stars" swap for Mood.
-  // NOTE: Added the 9th-12th block (Edit D) - previously 9th-12th fell through to the
-  // raw Lookup1 text ("8-10 hrs", "8-11 cups", "0-1 drinks"), which was both the wrong
-  // format and, for Water, the wrong value (should be 9-13 cups, not 8-11).
   const getDisplayGoal = (h: HabitConfig, grade: string): string => {
     if (grade === 'K - 5th') {
       if (h.key === 'sleep') return '9 - 12 hours / night';
@@ -417,20 +412,6 @@ export default function App() {
     return h.goal === '10 mins' ? '3 stars' : h.goal;
   };
 
-  // ============================================================
-  // FIX LOG (most recent round):
-  // 1) 'mood' had NO explicit color rule anywhere in this function.
-  //    Mood values are only 1, 2, or 3, so they always fell through
-  //    to the generic catch-all at the bottom:
-  //      return val >= 8 ? 'green' : val === 7 ? 'yellow' : 'red';
-  //    Since mood is never >= 7, it was ALWAYS red. Added an explicit
-  //    grade-independent mood rule: 1 = red, 2 = yellow, 3 = green.
-  // 2) 'water' for K - 5th had NO explicit rule, so it fell through to
-  //    the generic Lookup2-based calculation (target=8, min=6), which
-  //    produced TWO yellow values (6 and 7) instead of one and used the
-  //    wrong cutoffs. Added an explicit K-5th water rule matching Edit
-  //    B / Edit 23-24 spec: red = 0-4, yellow = 5, green = 6-9+.
-  // ============================================================
   const getHabitColor = (key: HabitKey, val: number, grade: string): 'red' | 'yellow' | 'green' => {
     if (grade === 'K - 5th') {
       if (key === 'sleep') {
@@ -438,8 +419,6 @@ export default function App() {
         if (val === 8) return 'yellow';
         return 'red';
       }
-      // FIX: explicit K-5th water rule added (was missing, causing fallthrough
-      // to the generic Lookup2 calc with wrong thresholds / two yellows).
       if (key === 'water') {
         if (val >= 6) return 'green';
         if (val === 5) return 'yellow';
