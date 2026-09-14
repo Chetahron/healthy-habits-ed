@@ -4,7 +4,6 @@ import { collection, doc, setDoc, onSnapshot } from 'firebase/firestore';
 import logo from './assets/logo.png';
 import sidebarLogo from './assets/new-sidebar-logo.png';
 
-// --- BACKGROUND LOOKUP TABLES (Lookup 1, Lookup 2, Lookup 3) ---
 const Lookup1: string[][] = [
   ["Grade", "Sleep", "Physical Activity", "Water", "Fruits & Veg", "Whole Foods", "UPF", "Sugary Drinks", "Screen Time", "Outdoor Time", "Mindfulness", "Reading"],
   ["K - 5th", "9-12 hrs", "60 mins", "6-9 cups", ">= 5 servings", ">= 80%", "<= 20%", "0 drinks", "<= 2 hrs", ">= 60 mins", "10 mins", "20 mins"],
@@ -27,7 +26,6 @@ const Lookup3: string[][] = [
   ["9th - 12th", "30", "60", "120", "0", "1", "2", "30", "60", "120", "5", "10", "20", "10", "20", "45", "0", "0", "1"]
 ];
 
-// --- Habit Types & Definitions ---
 export type HabitKey =
   | 'sleep'
   | 'physicalActivity'
@@ -48,7 +46,7 @@ export interface HabitConfig {
 }
 
 interface DailyEntry {
-  date: string; // YYYY-MM-DD
+  date: string;
   sleep?: number;
   physicalActivity?: number;
   water?: number;
@@ -80,7 +78,6 @@ interface SurveyResponse {
 }
 
 export default function App() {
-  // Navigation & Auth State - Defaults to 'login' if no active session
   const [currentUser, setCurrentUser] = useState<string | null>(() => {
     return localStorage.getItem('healthy_habits_current_user') || null;
   });
@@ -89,17 +86,14 @@ export default function App() {
     return localStorage.getItem('healthy_habits_current_user') ? 'classroom' : 'login';
   });
 
-  // Form Inputs - Login
   const [loginUsername, setLoginUsername] = useState('');
   const [loginError, setLoginError] = useState('');
 
-  // Form Inputs - Registration
   const [regRole, setRegRole] = useState<'Teacher' | 'Student' | ''>('');
   const [regGrade, setRegGrade] = useState<'K - 5th' | '6th - 8th' | '9th - 12th' | ''>('');
   const [regUsername, setRegUsername] = useState('');
   const [regClassroomCode, setRegClassroomCode] = useState('');
 
-  // Registration Validation Errors
   const [regFormatError, setRegFormatError] = useState(false);
   const [regTakenError, setRegTakenError] = useState(false);
   const [roleError, setRoleError] = useState(false);
@@ -108,7 +102,6 @@ export default function App() {
   const [codeCustomError, setCodeCustomError] = useState('');
   const [generalRegError, setGeneralRegError] = useState(false);
 
-  // Log Data Inputs State
   const [logFormValues, setLogFormValues] = useState<Record<HabitKey, number>>({
     sleep: 0,
     physicalActivity: 0,
@@ -121,10 +114,8 @@ export default function App() {
   });
   const [logSuccessMsg, setLogSuccessMsg] = useState('');
 
-  // View Data State
   const [selectedCategory, setSelectedCategory] = useState<HabitKey>('water');
 
-  // Survey Form State
   const [studentSurvey, setStudentSurvey] = useState<SurveyResponse>({
     studentUsername: '',
     classroomCode: '',
@@ -137,7 +128,6 @@ export default function App() {
   });
   const [surveySuccessMsg, setSurveySuccessMsg] = useState('');
 
-  // --- Database & Firebase Sync Setup ---
   const [usersDb, setUsersDb] = useState<Record<string, UserData>>(() => {
     try {
       const saved = localStorage.getItem('healthy_habits_users_db');
@@ -159,7 +149,6 @@ export default function App() {
     }
   };
 
-  // Real-time Firebase listeners for Cloud Sync
   useEffect(() => {
     const unsubscribeUsers = onSnapshot(doc(db, 'appData', 'usersDb'), (docSnap) => {
       if (docSnap.exists()) {
@@ -195,7 +184,6 @@ export default function App() {
     }
   }, [currentUser, usersDb]);
 
-  // Load existing entry values for today into logFormValues when switching to 'log' or when user changes
   useEffect(() => {
     if (currentUser && usersDb[currentUser]) {
       const todayISO = getTodayESTISO();
@@ -228,7 +216,6 @@ export default function App() {
     }
   }, [currentUser, currentPage, usersDb]);
 
-  // Load existing survey response for the current user, or reset to blank if they've never submitted one
   useEffect(() => {
     if (!currentUser) return;
     const ownResponses = surveyData
@@ -253,13 +240,11 @@ export default function App() {
     }
   }, [currentUser, currentPage, surveyData, usersDb]);
 
-  // Helper: Get EST ISO Date String (YYYY-MM-DD)
   const getTodayESTISO = (): string => {
     const now = new Date();
     return now.toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
   };
 
-  // Helper: Get EST Formatted Date String (MM/DD/YYYY)
   const getTodayESTFormatted = (): string => {
     const now = new Date();
     const parts = new Intl.DateTimeFormat('en-US', {
@@ -283,7 +268,6 @@ export default function App() {
     return `${month}/${day}/${year}`;
   };
 
-  // User & Classroom Lookup Helpers
   const getCurrentUserGrade = (): string => {
     if (!currentUser || !usersDb[currentUser]) return 'K - 5th';
     const user = usersDb[currentUser];
@@ -307,7 +291,6 @@ export default function App() {
     return usersDb[currentUser].classroomCode || 'N/A';
   };
 
-  // --- Dynamic Lookup Table Hook Functions ---
   const getGoalFromLookup1 = (habitKey: HabitKey, gradeOverride?: string): string => {
     const headers = Lookup1[0];
     const habitLabelMap: Record<HabitKey, string> = {
@@ -328,7 +311,7 @@ export default function App() {
     const grade = gradeOverride || getCurrentUserGrade();
     const role = getCurrentUserRole();
 
-    let rowIdx = 1; // Default K-5th
+    let rowIdx = 1;
     if (grade === '6th - 8th') rowIdx = 2;
     if (grade === '9th - 12th') rowIdx = 3;
     if (role === 'Teacher' && !gradeOverride) rowIdx = 4;
@@ -336,7 +319,6 @@ export default function App() {
     return Lookup1[rowIdx]?.[colIdx] || 'N/A';
   };
 
-  // Dynamic Lookup 2 & 3 evaluation helpers
   const getLookup2Metric = (metricName: string, grade: string): number => {
     let rowIdx = 1;
     if (grade === '6th - 8th') rowIdx = 2;
@@ -359,8 +341,6 @@ export default function App() {
     return parseFloat(valStr.replace('%', '')) || 0;
   };
 
-  // Habit Configs Dynamically Generated from Lookup Tables for any Grade
-  // Water dropdown differentiates 6th-8th (0-11+) from 9th-12th (0-13+).
   const getHabitsConfig = (grade: string): HabitConfig[] => {
     const isElementary = grade === 'K - 5th';
     const isHighSchool = grade === '9th - 12th';
@@ -370,10 +350,6 @@ export default function App() {
       : isHighSchool
         ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
         : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
-    // Explicitly typed as Record<number, string> so TypeScript checks each
-    // ternary branch against that target type directly, instead of inferring a
-    // union type where the other branches' keys show up as `?: undefined`,
-    // which is incompatible with HabitConfig.selectionLabels (Record<number, string>).
     const waterLabels: Record<number, string> = isElementary
       ? { 9: '9+' }
       : isHighSchool
@@ -392,8 +368,6 @@ export default function App() {
     ];
   };
 
-  // Returns the goal text to display, applying K-5th, 6th-8th, and 9th-12th overrides for
-  // Sleep, Water, and Sugary Drinks, and the existing "10 mins" -> "3 stars" swap for Mood.
   const getDisplayGoal = (h: HabitConfig, grade: string): string => {
     if (grade === 'K - 5th') {
       if (h.key === 'sleep') return '9 - 12 hours / night';
@@ -480,36 +454,26 @@ export default function App() {
       if (val >= min) return 'yellow';
       return 'red';
     }
-    // Fruits & Veg color rule (same thresholds for every grade)
-    // green = 5+ (meets ">= 5 servings" goal), yellow = 4 (one stage off), red = 0-3
     if (key === 'fruitsVeg') {
       if (val >= 5) return 'green';
       if (val >= 4) return 'yellow';
       return 'red';
     }
-    // Whole Foods color rule (same thresholds for every grade)
-    // green = 80+ (meets ">= 80%" goal), yellow = 70 (one stage off), red = 0-60
     if (key === 'wholeFoods') {
       if (val >= 80) return 'green';
       if (val >= 70) return 'yellow';
       return 'red';
     }
-    // Ultra-Processed Foods color rule (same thresholds for every grade)
-    // <=20 = green, 21-30 = yellow, >=31 = red (inverted: lower is better)
     if (key === 'upf') {
       if (val <= 20) return 'green';
       if (val <= 30) return 'yellow';
       return 'red';
     }
-    // Mood color rule (same thresholds for every grade)
-    // 1 = red, 2 = yellow, 3 = green
     if (key === 'mood') {
       if (val >= 3) return 'green';
       if (val === 2) return 'yellow';
       return 'red';
     }
-    // Physical Activity color rule (same thresholds for every grade)
-    // green = 60+ (meets "60 mins" goal), yellow = 45 (one stage off), red = 0-30
     if (key === 'physicalActivity') {
       if (val >= 60) return 'green';
       if (val >= 45) return 'yellow';
@@ -524,7 +488,6 @@ export default function App() {
     return val >= 8 ? 'green' : val === 7 ? 'yellow' : 'red';
   };
 
-  // --- Handlers ---
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = (loginUsername || '').trim();
@@ -668,7 +631,6 @@ export default function App() {
     }
   };
 
-  // Keep only each student's most recent response, in case older duplicate docs still linger in the DB
   const getLatestSurveysByStudent = (): SurveyResponse[] => {
     const latestByStudent: Record<string, SurveyResponse> = {};
     for (const resp of surveyData) {
@@ -692,7 +654,6 @@ export default function App() {
     }).length;
   };
 
-  // Calculation Helpers
   const getUserEntries = (): DailyEntry[] => {
     if (!currentUser || !usersDb[currentUser]) return [];
     const entriesObj = usersDb[currentUser].entries || {};
@@ -759,7 +720,6 @@ export default function App() {
     return <span style={{ color: 'red', fontWeight: 'bold' }}>✕</span>;
   };
 
-  // --- Theme Colors & Fonts ---
   const steelBlue = '#3E6F9B';
   const cream = '#FCFAF5';
   const charBlack = '#202124';
@@ -984,7 +944,6 @@ export default function App() {
     }
   };
 
-  // --- LOGIN PAGE ---
   if (!currentUser && currentPage === 'login') {
     return (
       <div style={styles.appContainer}>
@@ -1031,7 +990,6 @@ export default function App() {
     );
   }
 
-  // --- REGISTRATION PAGE ---
   if (!currentUser && currentPage === 'register') {
     return (
       <div style={styles.appContainer}>
@@ -1185,7 +1143,6 @@ export default function App() {
     );
   }
 
-  // --- DASHBOARD / MAIN APP WRAPPER ---
   const currentGrade = getCurrentUserGrade();
   const habitsConfig = getHabitsConfig(currentGrade);
   const currentUserRole = getCurrentUserRole();
@@ -1193,7 +1150,6 @@ export default function App() {
 
   return (
     <div style={styles.dashboardLayout}>
-      {/* Sidebar Navigation */}
       <div style={styles.sidebar}>
         <div style={styles.sidebarLogoBox}>
           <img src={sidebarLogo} alt="Sidebar Logo" style={styles.sidebarLogoImage} />
@@ -1301,9 +1257,7 @@ export default function App() {
         </button>
       </div>
 
-      {/* Main Content Area */}
       <div style={styles.mainContent}>
-        {/* Header section */}
         <div style={{ textAlign: 'left', marginBottom: '25px' }}>
           <img src={logo} alt="HealthyHabitsED Logo" style={styles.headerLogoImage} />
           <div style={styles.metaInfoLine}>
@@ -1320,7 +1274,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* Classroom Scorecard View */}
         {currentPage === 'classroom' && (
           <div style={{ textAlign: 'left', maxWidth: '700px' }}>
             <h2 style={styles.pageHeaderTitle}>
@@ -1353,7 +1306,6 @@ export default function App() {
           </div>
         )}
 
-        {/* Personal Scorecard View */}
         {currentPage === 'home' && (
           <div style={{ textAlign: 'left', maxWidth: '700px' }}>
             <h2 style={styles.pageHeaderTitle}>
@@ -1386,7 +1338,6 @@ export default function App() {
           </div>
         )}
 
-        {/* Daily Data Log View */}
         {currentPage === 'log' && (
           <div style={{ textAlign: 'left', maxWidth: '700px' }}>
             <h2 style={styles.pageHeaderTitle}>My Daily Data Log</h2>
@@ -1437,7 +1388,6 @@ export default function App() {
           </div>
         )}
 
-        {/* Daily Data View (28-day grid) */}
         {currentPage === 'view' && (
           <div style={{ textAlign: 'left' }}>
             <h2 style={styles.pageHeaderTitle}>My Daily Data View (4-Week)</h2>
@@ -1488,7 +1438,6 @@ export default function App() {
           </div>
         )}
 
-        {/* Learning Center */}
         {currentPage === 'learning' && (
           <div style={{ textAlign: 'left', maxWidth: '800px' }}>
             <h2 style={styles.pageHeaderTitle}>
@@ -1599,7 +1548,6 @@ export default function App() {
           </div>
         )}
 
-        {/* Community Resources */}
         {currentPage === 'resources' && (
           <div style={{ textAlign: 'left', maxWidth: '700px' }}>
             <h2 style={styles.pageHeaderTitle}>Community Resources in Indianapolis, IN</h2>
@@ -1650,7 +1598,6 @@ export default function App() {
           </div>
         )}
 
-        {/* Survey */}
         {currentPage === 'survey' && currentUserRole === 'Student' && (
           <div style={{ textAlign: 'left', maxWidth: '700px' }}>
             <h2 style={styles.pageHeaderTitle}>Survey</h2>
@@ -1769,7 +1716,6 @@ export default function App() {
           </div>
         )}
 
-        {/* Survey Results (Teacher View) */}
         {currentPage === 'survey-results' && currentUserRole === 'Teacher' && (
           <div style={{ textAlign: 'left', maxWidth: '700px' }}>
             <h2 style={styles.pageHeaderTitle}>Survey Results</h2>
@@ -1860,7 +1806,6 @@ export default function App() {
           </div>
         )}
 
-        {/* About */}
         {currentPage === 'about' && (
           <div style={{ textAlign: 'left', maxWidth: '800px' }}>
             <h2 style={styles.pageHeaderTitle}>About HealthyHabitsED</h2>

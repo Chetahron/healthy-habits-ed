@@ -1,9 +1,7 @@
-// src/firebase.ts
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 
-// Credentials for your "congressionalappchalleng-7c20f" Firebase project
 const firebaseConfig = {
   apiKey: "AIzaSyCrjzfaEZBoSsoowDyKB28-Kfs_MrnDIzA",
   authDomain: "congressionalappchalleng-7c20f.firebaseapp.com",
@@ -14,9 +12,7 @@ const firebaseConfig = {
   measurementId: "G-5YYLWZCEDX"
 };
 
-// Initialize Firebase App
 const app = initializeApp(firebaseConfig);
 
-// Initialize and export Firestore database and Auth for App.tsx
 export const db = getFirestore(app);
 export const auth = getAuth(app);
